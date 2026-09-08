@@ -478,7 +478,10 @@
 </div>
 
 <script>
-let TIMELINE_STATIONS = [
+let TIMELINE_STATIONS = [];
+let streamEvents = [];
+
+const DEFAULT_SAMPLE_STATIONS = [
     {
         day: "Day 1 (09:00)",
         state: [
@@ -537,13 +540,37 @@ let TIMELINE_STATIONS = [
     }
 ];
 
-let streamEvents = [
+const DEFAULT_SAMPLE_EVENTS = [
     { time: "2026-09-01 09:00", text: "Database ➔ PostgreSQL | Initial system choice" },
     { time: "2026-09-01 10:30", text: "TeamLead ➔ Sarah | Appointed tech lead" },
     { time: "2026-09-02 14:00", text: "Database ➔ DynamoDB ($5k) | Write lock contention" },
     { time: "2026-09-03 09:00", text: "TeamLead ➔ Alex | Leadership transition" },
     { time: "2026-09-04 16:00", text: "Database ➔ Postgres + Redis ($1.8k) | Cost optimization" }
 ];
+
+function initDefaultData() {
+    TIMELINE_STATIONS = JSON.parse(JSON.stringify(DEFAULT_SAMPLE_STATIONS));
+    streamEvents = JSON.parse(JSON.stringify(DEFAULT_SAMPLE_EVENTS));
+    updateSliderUI();
+    renderStream();
+    onScrub(1);
+}
+
+function updateSliderUI() {
+    const slider = document.getElementById("timeSlider");
+    const ticks = document.getElementById("timelineTicks");
+    slider.min = "0";
+    slider.max = String(Math.max(0, TIMELINE_STATIONS.length - 1));
+    
+    ticks.innerHTML = "";
+    TIMELINE_STATIONS.forEach((st, idx) => {
+        const span = document.createElement("span");
+        let label = st.day.split(' ')[0] || `T${idx+1}`;
+        if (label.length > 8) label = label.substring(0, 7) + '..';
+        span.innerText = label;
+        ticks.appendChild(span);
+    });
+}
 
 function renderStream() {
     const container = document.getElementById("deltaStream");
@@ -558,27 +585,125 @@ function renderStream() {
 }
 
 function onScrub(index) {
-    const station = TIMELINE_STATIONS[index] || TIMELINE_STATIONS[0];
+    index = parseInt(index) || 0;
+    if (index >= TIMELINE_STATIONS.length) index = TIMELINE_STATIONS.length - 1;
+    if (index < 0) index = 0;
+
+    const station = TIMELINE_STATIONS[index] || {
+        day: "Empty Timeline",
+        state: [],
+        rag_output: "No data available.",
+        tm_output: "No data available.",
+        causal: "No causal history."
+    };
+
     document.getElementById("playheadLabel").innerText = station.day;
+    document.getElementById("timeSlider").value = index;
     
     // Render State Matrix Table
     const tbody = document.getElementById("stateMatrixBody");
     tbody.innerHTML = "";
-    station.state.forEach(s => {
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-            <td><b>${s.entity}</b></td>
-            <td><span style="color: var(--text-muted); font-size:12px;">${s.rack}</span></td>
-            <td><span style="color: var(--accent-blue); font-weight: 700; font-family: 'JetBrains Mono';">${s.val}</span></td>
-            <td><span class="tag-committed">${s.modality}</span></td>
-        `;
-        tbody.appendChild(tr);
-    });
+    if (station.state.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;color:var(--text-muted);padding:20px;">No active state variables at this playhead position.</td></tr>`;
+    } else {
+        station.state.forEach(s => {
+            const tr = document.createElement("tr");
+            tr.innerHTML = `
+                <td><b>${s.entity}</b></td>
+                <td><span style="color: var(--text-muted); font-size:12px;">${s.rack}</span></td>
+                <td><span style="color: var(--accent-blue); font-weight: 700; font-family: 'JetBrains Mono';">${s.val}</span></td>
+                <td><span class="tag-committed">${s.modality || 'COMMITTED'}</span></td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
 
     // Update Result text
     document.getElementById("timemeshinResultText").innerHTML = `<b>100% Deterministic State at ${station.day}:</b><br>` + station.tm_output;
-    document.getElementById("ragResultText").innerHTML = `<b>Vector RAG Output:</b><br>` + station.rag_output;
+    document.getElementById("ragResultText").innerHTML = `<b>Standard Vector RAG Output:</b><br>` + station.rag_output;
     document.getElementById("causalChainBox").innerHTML = `<div style="font-weight: 700; color: var(--text-heading); margin-bottom: 6px;">🔗 Transitive Causal Chain:</div><div class="chain-step">${station.causal}</div>`;
+}
+
+function extractEntityFromLine(line) {
+    // 1. Arrow notation: "Entity ➔ Value | Context"
+    if (line.includes("➔")) {
+        const parts = line.split("➔");
+        const entity = parts[0].replace(/^[\[\(].*?[\]\)]\s*/, '').trim();
+        const rest = parts[1].split("|");
+        const val = rest[0].trim();
+        const rack = rest[1] ? rest[1].trim().substring(0, 20) : "Context";
+        return { entity: entity.substring(0, 24), val: val.substring(0, 40), rack: rack };
+    }
+    
+    // 2. Colon notation: "Key: Value"
+    if (line.includes(":") && !line.startsWith("http")) {
+        const parts = line.split(":");
+        const entity = parts[0].replace(/^[\[\(#\*\-\s]+/, '').trim();
+        const val = parts.slice(1).join(":").trim();
+        if (entity.length > 1 && entity.length < 30 && val.length > 0) {
+            return { entity: entity, val: val.substring(0, 40), rack: "Document" };
+        }
+    }
+
+    // 3. Fallback: Clean sentence summary
+    const words = line.split(" ").filter(w => w.length > 2);
+    const entity = words.slice(0, 2).join(" ") || "Section";
+    const val = line.substring(0, 36);
+    return { entity: entity, val: val, rack: "Overview" };
+}
+
+function reconstructTimelineFromStream() {
+    if (streamEvents.length === 0) return;
+
+    // Sort chronologically (oldest to newest for timeline playhead)
+    const chronological = [...streamEvents].reverse();
+    const newStations = [];
+    const cumulativeState = {};
+
+    chronological.forEach((ev, idx) => {
+        const parsed = extractEntityFromLine(ev.text);
+        cumulativeState[parsed.entity] = {
+            entity: parsed.entity,
+            rack: parsed.rack,
+            val: parsed.val,
+            modality: "COMMITTED"
+        };
+
+        const stateList = Object.values(cumulativeState);
+        const tmSummary = stateList.slice(0, 4).map(s => `• <b>${s.entity}:</b> ${s.val}`).join("<br>");
+        
+        // Simulate Vector RAG hallucination by pulling future/conflicting entities if available
+        let ragSummary = "";
+        if (idx < chronological.length - 1) {
+            const futureItem = chronological[chronological.length - 1].text.substring(0, 60);
+            ragSummary = `⚠️ Hallucination / Leakage: Mixes current step with future data "${futureItem}" simultaneously without temporal fencing.`;
+        } else {
+            ragSummary = `Retrieved all chunks without temporal fence: "${stateList.map(s => s.val).join(', ')}"`;
+        }
+
+        let causalTrail = "";
+        if (idx === 0) {
+            causalTrail = `[${ev.time}] Initial state established: ${ev.text.substring(0, 60)}`;
+        } else {
+            const prev = chronological[idx - 1];
+            causalTrail = `[${prev.time}] ➔ [${ev.time}] Delta applied: ${ev.text.substring(0, 60)}`;
+        }
+
+        newStations.push({
+            day: `Step ${idx + 1} (${ev.time.split(' ')[1] || ev.time})`,
+            state: JSON.parse(JSON.stringify(stateList)),
+            rag_output: ragSummary,
+            tm_output: tmSummary || ev.text.substring(0, 100),
+            causal: causalTrail
+        });
+    });
+
+    TIMELINE_STATIONS = newStations;
+    updateSliderUI();
+    // Move playhead to latest state
+    const latestIdx = TIMELINE_STATIONS.length - 1;
+    document.getElementById("timeSlider").value = latestIdx;
+    onScrub(latestIdx);
 }
 
 function ingestCustomText() {
@@ -587,13 +712,11 @@ function ingestCustomText() {
     const now = new Date().toISOString().replace("T", " ").substring(0, 16);
     streamEvents.unshift({ time: now, text: text });
     renderStream();
+    reconstructTimelineFromStream();
     document.getElementById("rawInput").value = "";
-    alert("✅ Event Delta Ingested & Spliced into Timeline!");
+    showToast("⚡ Text Delta Ingested & Playhead Recalculated!");
 }
 
-// -----------------------------------------------------------------------------
-// FILE UPLOAD HANDLER (DRAG & DROP OR FILE PICKER)
-// -----------------------------------------------------------------------------
 function handleFileUpload(event) {
     const file = event.target.files[0];
     if (!file) return;
@@ -629,7 +752,6 @@ function processUploadedContent(filename, content) {
 
     try {
         if (ext === 'html' || ext === 'htm') {
-            // Strategy 1: DOMParser with script/style removal
             try {
                 const parser = new DOMParser();
                 const doc = parser.parseFromString(content, 'text/html');
@@ -638,12 +760,11 @@ function processUploadedContent(filename, content) {
                 const rawText = doc.body ? (doc.body.innerText || doc.body.textContent || "") : "";
                 cleanLines = rawText.split('\n')
                     .map(t => t.trim().replace(/\s+/g, ' '))
-                    .filter(t => t.length >= 10);
+                    .filter(t => t.length >= 8);
             } catch (domErr) {
                 console.warn("DOMParser fallback triggered:", domErr);
             }
 
-            // Strategy 2: Regex fallback if DOMParser yields nothing
             if (!cleanLines || cleanLines.length === 0) {
                 let stripped = content
                     .replace(/<(script|style|svg|head)[\s\S]*?<\/\1>/gi, ' ')
@@ -655,7 +776,7 @@ function processUploadedContent(filename, content) {
                 stripped = tempDiv.textContent || tempDiv.innerText || stripped;
                 cleanLines = stripped.split('\n')
                     .map(t => t.trim().replace(/\s+/g, ' '))
-                    .filter(t => t.length >= 10);
+                    .filter(t => t.length >= 8);
             }
         } else if (ext === 'md') {
             cleanLines = content.split('\n')
@@ -673,7 +794,6 @@ function processUploadedContent(filename, content) {
                 cleanLines = content.split('\n').map(l => l.trim()).filter(l => l.length > 0);
             }
         } else {
-            // Default plain text / log / CSV / PDF string fallback
             cleanLines = content.split('\n')
                 .map(l => l.replace(/[^\x20-\x7E\t]/g, '').trim())
                 .filter(l => l.length >= 5);
@@ -687,18 +807,23 @@ function processUploadedContent(filename, content) {
         cleanLines = ["Document ingested successfully."];
     }
 
-    showToast(`📥 Ingested <b>${filename}</b> (${cleanLines.length} sections found)!`);
+    // Clear current stream to load the document's sequence fresh
+    streamEvents = [];
+    const sectionCount = Math.min(cleanLines.length, 12);
 
-    cleanLines.slice(0, 15).forEach((line, idx) => {
+    for (let idx = 0; idx < sectionCount; idx++) {
+        let line = cleanLines[idx];
         let cleanText = line.substring(0, 110);
-        let simulatedTime = `2026-09-0${Math.min(idx + 1, 9)} 10:${(idx * 4) % 60 < 10 ? '0' : ''}${(idx * 4) % 60}`;
-        streamEvents.unshift({
+        let simulatedTime = `2026-09-0${Math.min(idx + 1, 9)} 10:${(idx * 5) % 60 < 10 ? '0' : ''}${(idx * 5) % 60}`;
+        streamEvents.push({
             time: simulatedTime,
             text: `[${filename}] ${cleanText}`
         });
-    });
+    }
 
     renderStream();
+    reconstructTimelineFromStream();
+    showToast(`✅ Ingested <b>${filename}</b> (${sectionCount} timeline stations created)!`);
 }
 
 // Drag & Drop event bindings
@@ -720,9 +845,8 @@ dropzone.addEventListener('drop', (e) => {
 });
 
 function loadSampleScenario() {
-    alert("✅ Loaded 30-Day Multi-DB Enterprise Scenario into Timeline!");
-    document.getElementById("timeSlider").value = 1;
-    onScrub(1);
+    initDefaultData();
+    showToast("✅ Loaded 30-Day Multi-DB Enterprise Scenario into Timeline!");
 }
 
 function runQuery() {
@@ -732,8 +856,7 @@ function runQuery() {
 }
 
 // Initial setup
-renderStream();
-onScrub(1);
+initDefaultData();
 </script>
 
 </body>
