@@ -247,43 +247,62 @@ User Question: {question}
 Answer based ONLY on the ground-truth state and causal trajectory up to {playhead_dt.strftime('%Y-%m-%d %H:%M')}:"""
         return prompt
 
-    def ask(
+    def chat(
         self,
-        question: str,
+        user_message: str,
         playhead: Any = None,
-        filter_rack: Optional[str] = None
+        model_name: Optional[str] = None
     ) -> str:
         """
-        Returns a human-readable synthesized natural language answer explaining the state and causation.
+        Conversational AI Assistant with temporal ground-truth memory.
+        Replies in natural conversation strictly based on the world state at the playhead.
         """
         playhead_dt = self._parse_time(playhead) if playhead else (self.engine.deltas[-1].timestamp if self.engine.deltas else datetime.utcnow())
-        res = self.query_at(playhead_dt, query=question, filter_rack=filter_rack)
+        res = self.query_at(playhead_dt, query=user_message)
         
-        q_lower = question.lower()
-        matched_items = []
+        # Check if OpenAI or Gemini is available
+        api_key = os.environ.get("OPENAI_API_KEY") or os.environ.get("GEMINI_API_KEY")
+        if api_key and os.environ.get("OPENAI_API_KEY"):
+            try:
+                import openai
+                prompt = self.generate_context_prompt(user_message, playhead=playhead_dt)
+                client_ai = openai.OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
+                resp = client_ai.chat.completions.create(
+                    model=model_name or "gpt-4o-mini",
+                    messages=[
+                        {"role": "system", "content": "You are a helpful, precise engineering assistant. Strictly adhere to the ground-truth state provided without leaking future information."},
+                        {"role": "user", "content": prompt}
+                    ]
+                )
+                return resp.choices[0].message.content
+            except Exception:
+                pass
+
+        # Built-in High-Fidelity Conversational Synthesis
+        q_lower = user_message.lower()
+        matched = []
         for k, v in res["state"].items():
             if any(term in k.lower() or term in str(v).lower() for term in q_lower.split() if len(term) > 2):
-                matched_items.append((k, v))
+                matched.append(f"{k} is currently set to **{v}**")
                 
-        if not matched_items:
-            matched_items = list(res["state"].items())[:5]
-            
-        summary_lines = [f"• **{k}**: {v}" for k, v in matched_items]
-        summary_text = "\n".join(summary_lines) if summary_lines else "• No matching state variables found."
+        time_str = playhead_dt.strftime("%Y-%m-%d %H:%M")
         
-        answer = f"""### 🌟 TimeMeshin Ground-Truth Answer (as of {playhead_dt.strftime('%Y-%m-%d %H:%M')}):
+        if not matched:
+            state_sample = ", ".join([f"{k}: {v}" for k, v in list(res["state"].items())[:4]])
+            response = f"At **{time_str}**, the system state is configured as follows: {state_sample}. Based on our causal timeline, the recent operational progression is:\n\n{res['causal_summary']}"
+        else:
+            facts = "; ".join(matched)
+            response = f"As of **{time_str}**, {facts}.\n\n**Historical Causation & Context:**\n{res['causal_summary']}\n\n*(Temporal Fence: 0% future data leakage)*"
+            
+        return response
 
-**Active Ground-Truth State:**
-{summary_text}
-
-**Root Cause & Causality Trail:**
-{res['causal_summary']}
-
-*(🛡️ Temporal Fence strictly enforced: 0% future data leakage)*"""
-        return answer
+    def ask(self, question: str, playhead: Any = None) -> str:
+        """Convenient alias for chat."""
+        return self.chat(user_message=question, playhead=playhead)
 
 
 # Backward compatibility alias
+
 ChronoMeshClient = TimeMeshinClient
 
 
