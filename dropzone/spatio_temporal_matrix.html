@@ -8,10 +8,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
     body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; background-color: #f8fafc; color: #1e293b; }
-    .matrix-grid { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(280px, 1fr); gap: 12px; }
-    .swimlane { border-bottom: 2px solid #e2e8f0; }
     .card-committed { border-left: 4px solid #10b981; background: #ffffff; }
-    .card-evaluating { border-left: 4px solid #f59e0b; background: #fffbeb; }
     .card-future { opacity: 0.25; filter: grayscale(80%); }
     .timeline-scrubber::-webkit-slider-thumb {
       -webkit-appearance: none; appearance: none;
@@ -19,6 +16,7 @@
       background: #2563eb; cursor: pointer; border: 3px solid #ffffff;
       box-shadow: 0 2px 6px rgba(0,0,0,0.25);
     }
+    .modal-backdrop { background-color: rgba(15, 23, 42, 0.6); backdrop-filter: blur(3px); }
   </style>
 </head>
 <body class="p-4 md:p-8">
@@ -45,9 +43,9 @@
         <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-800 border border-blue-200">
           <i class="fa-solid fa-filter mr-1.5"></i> Noise Filter Active
         </span>
-        <button onclick="loadSampleData()" class="px-3.5 py-1.5 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg border border-slate-300 transition">
-          <i class="fa-solid fa-rotate mr-1"></i> Reload Sample
-        </button>
+        <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-purple-100 text-purple-800 border border-purple-200">
+          <i class="fa-solid fa-hand-pointer mr-1.5"></i> Click Any Box to Inspect
+        </span>
       </div>
     </div>
 
@@ -58,7 +56,7 @@
           <i class="fa-solid fa-video text-blue-600 mr-1"></i> Playhead Position ($t \le T$):
         </span>
         <span id="playhead-label" class="text-sm font-black text-blue-700 bg-blue-50 px-3 py-0.5 rounded-full border border-blue-200">
-          2026-09-08 17:00:00 (Latest)
+          Latest
         </span>
       </div>
       <input id="scrubber-slider" type="range" min="0" max="10" value="10" class="timeline-scrubber w-full h-2.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-600" oninput="onScrub(this.value)">
@@ -81,7 +79,7 @@
         </div>
         <div class="col-span-9 flex items-center justify-between text-blue-700">
           <span><i class="fa-solid fa-arrow-right mr-1"></i> Chronological Timeline Events (T →)</span>
-          <span class="text-[11px] font-normal text-slate-400">Events gated by Playhead</span>
+          <span class="text-[11px] font-normal text-slate-400">Click any card to open full message & causal chain</span>
         </div>
       </div>
 
@@ -103,39 +101,113 @@
     </div>
   </div>
 
-  <!-- JavaScript Matrix Engine -->
+  <!-- Interactive Event Inspector Modal / Drawer -->
+  <div id="inspector-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 modal-backdrop hidden" onclick="closeModalOnBackdrop(event)">
+    <div class="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-2xl w-full max-h-[90vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150" onclick="event.stopPropagation()">
+      
+      <!-- Modal Header -->
+      <div class="px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-slate-50">
+        <div class="flex items-center gap-2.5">
+          <span class="w-8 h-8 rounded-lg bg-blue-600 text-white flex items-center justify-center font-bold text-sm shadow-sm">
+            🔍
+          </span>
+          <div>
+            <h3 id="modal-title" class="text-base font-black text-slate-800">Event Details</h3>
+            <p id="modal-subtitle" class="text-xs text-slate-500 font-medium">State Mutation & Causal Lineage</p>
+          </div>
+        </div>
+        <button onclick="closeModal()" class="w-8 h-8 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-200/60 flex items-center justify-center transition">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+
+      <!-- Modal Body -->
+      <div class="p-6 overflow-y-auto space-y-6">
+        
+        <!-- Key Mutation Summary Box -->
+        <div class="bg-blue-50/70 border border-blue-200 rounded-xl p-4">
+          <div class="flex items-center justify-between text-xs mb-1.5">
+            <span id="modal-topic" class="font-bold text-blue-700 uppercase tracking-wider">Topic</span>
+            <span id="modal-timestamp" class="text-slate-500 font-semibold">2026-09-08</span>
+          </div>
+          <div class="text-base font-black text-slate-900" id="modal-change">
+            Entity ➔ New Value
+          </div>
+          <div class="text-xs text-slate-500 mt-1" id="modal-transition">
+            Previous: None ➔ Updated
+          </div>
+        </div>
+
+        <!-- 1. Full Conversation / Excerpt Message -->
+        <div>
+          <h4 class="text-xs font-bold uppercase tracking-wider text-slate-500 mb-2 flex items-center gap-1.5">
+            <i class="fa-solid fa-message text-blue-600"></i> Original Full Message / Context Turn:
+          </h4>
+          <div id="modal-full-text" class="p-4 bg-slate-50 rounded-xl border border-slate-200 text-xs text-slate-700 leading-relaxed whitespace-pre-wrap font-mono">
+            Full text goes here...
+          </div>
+        </div>
+
+        <!-- 2. The Local Causal Chain Lineage -->
+        <div>
+          <h4 class="text-xs font-bold uppercase tracking-wider text-slate-500 mb-2 flex items-center gap-1.5">
+            <i class="fa-solid fa-diagram-project text-emerald-600"></i> Local Causal Chain (The Domino Effect):
+          </h4>
+          <div id="modal-causal-chain" class="space-y-3">
+            <!-- Injected dynamically -->
+          </div>
+        </div>
+
+        <!-- 3. Provenance Metadata -->
+        <div class="grid grid-cols-2 gap-3 pt-2 text-[11px] text-slate-500 border-t border-slate-100">
+          <div><span class="font-semibold text-slate-700">Source Document:</span> <span id="modal-source">dropzone file</span></div>
+          <div><span class="font-semibold text-slate-700">State Modality:</span> <span id="modal-modality" class="text-emerald-700 font-bold">COMMITTED</span></div>
+        </div>
+
+      </div>
+
+      <!-- Modal Footer Actions -->
+      <div class="px-6 py-3.5 border-t border-slate-200 bg-slate-50 flex items-center justify-between">
+        <button id="modal-scrub-btn" class="px-4 py-2 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-sm transition flex items-center gap-1.5">
+          <i class="fa-solid fa-clock-rotate-left"></i> Scrub Timeline to This Moment
+        </button>
+        <button onclick="closeModal()" class="px-4 py-2 text-xs font-semibold text-slate-600 hover:text-slate-900 bg-white hover:bg-slate-100 rounded-lg border border-slate-200 transition">
+          Close
+        </button>
+      </div>
+
+    </div>
+  </div>
+
   <script src="matrix_data.js"></script>
   <script>
     const SAMPLE_MATRIX = {
       topics: [
+        "Multi-Agent SCM Architecture",
+        "GPU & CUDA Benchmarks",
+        "Mathematical Formulations",
         "Database & Storage",
         "Auth & Security",
-        "Architecture & Core",
         "Budget & Operations",
         "UI & Frontend"
       ],
-      events: [
-        { id: "e1", time_idx: 1, timestamp: "2026-09-01 10:00", topic: "Database & Storage", entity: "Database", attr: "Engine", val: "PostgreSQL", old: "None", reason: "Initial setup for MVP", source: "Slack #dev" },
-        { id: "e2", time_idx: 1, timestamp: "2026-09-01 10:30", topic: "Budget & Operations", entity: "MonthlyBudget", attr: "AmountUSD", val: "$2,000", old: "$0", reason: "Seed infrastructure allowance", source: "Email approval" },
-        { id: "e3", time_idx: 2, timestamp: "2026-09-03 14:00", topic: "Auth & Security", entity: "AuthService", attr: "Protocol", val: "JWT_Local", old: "None", reason: "Fast internal auth token generation", source: "PR #12" },
-        { id: "e4", time_idx: 3, timestamp: "2026-09-04 16:00", topic: "Database & Storage", entity: "Database", attr: "Engine", val: "DynamoDB", old: "PostgreSQL", reason: "Write lock contention at 10k RPS", source: "Incident #44" },
-        { id: "e5", time_idx: 3, timestamp: "2026-09-04 16:15", topic: "Budget & Operations", entity: "MonthlyBudget", attr: "AmountUSD", val: "$4,500", old: "$2,000", reason: "Managed DynamoDB throughput cost", source: "AWS Billing alert" },
-        { id: "e6", time_idx: 4, timestamp: "2026-09-06 11:00", topic: "Architecture & Core", entity: "ContextEngine", attr: "Model", val: "TimeMeshin_ST", old: "VectorRAG", reason: "Eliminate 87% temporal hallucination", source: "RFC Doc" },
-        { id: "e7", time_idx: 5, timestamp: "2026-09-07 09:30", topic: "Auth & Security", entity: "AuthService", attr: "Protocol", val: "OAuth2_Google", old: "JWT_Local", reason: "Enterprise SSO compliance", source: "Security audit" },
-        { id: "e8", time_idx: 6, timestamp: "2026-09-08 15:00", topic: "UI & Frontend", entity: "DashboardTheme", attr: "Theme", val: "Light_Mode_Clean", old: "Dark", reason: "Accessibility and daylight readability", source: "Design review" },
-        { id: "e9", time_idx: 7, timestamp: "2026-09-08 17:00", topic: "Database & Storage", entity: "CacheLayer", attr: "Engine", val: "Redis_Cluster", old: "None", reason: "Hot-key caching for read spikes", source: "Commit #a89aaad" }
-      ]
+      events: []
     };
 
     let currentPlayheadIdx = 7;
+    let liveTimeline = [];
+    let currentInspectedEvent = null;
 
     function renderMatrix() {
       const container = document.getElementById("swimlanes-container");
       container.innerHTML = "";
-
       const activeState = {};
 
-      SAMPLE_MATRIX.topics.forEach(topic => {
+      const topics = (SAMPLE_MATRIX.topics && SAMPLE_MATRIX.topics.length) ? SAMPLE_MATRIX.topics : [
+        "Multi-Agent SCM Architecture", "GPU & CUDA Benchmarks", "Database & Storage", "Auth & Security", "UI & Frontend"
+      ];
+
+      topics.forEach(topic => {
         const row = document.createElement("div");
         row.className = "grid grid-cols-12 gap-4 py-4 items-center";
 
@@ -162,28 +234,32 @@
           topicEvents.forEach(e => {
             const isFuture = e.time_idx > currentPlayheadIdx;
             const card = document.createElement("div");
-            card.className = `flex-shrink-0 w-64 p-3 rounded-lg border shadow-xs transition-all duration-200 ${
-              isFuture ? 'card-future bg-slate-50 border-slate-200' : 'card-committed border-slate-200 shadow-sm'
+            card.className = `flex-shrink-0 w-72 p-3.5 rounded-xl border transition-all duration-200 cursor-pointer ${
+              isFuture 
+                ? 'card-future bg-slate-50 border-slate-200' 
+                : 'card-committed border-slate-200 shadow-sm hover:shadow-md hover:border-blue-400 hover:-translate-y-0.5'
             }`;
 
             if (!isFuture) {
               activeState[e.entity] = { attribute: e.attr, value: e.val, updated: e.timestamp };
             }
 
+            card.onclick = () => openEventInspector(e);
+
             card.innerHTML = `
-              <div class="flex justify-between items-center mb-1">
+              <div class="flex justify-between items-center mb-1.5">
                 <span class="text-[10px] font-bold text-slate-500"><i class="fa-regular fa-clock mr-1"></i>${e.timestamp}</span>
-                <span class="text-[9px] font-bold px-1.5 py-0.5 rounded ${isFuture ? 'bg-slate-200 text-slate-600' : 'bg-emerald-100 text-emerald-800'}">
+                <span class="text-[9px] font-black px-2 py-0.5 rounded-full ${isFuture ? 'bg-slate-200 text-slate-600' : 'bg-emerald-100 text-emerald-800 border border-emerald-200'}">
                   ${isFuture ? 'FUTURE' : 'COMMITTED'}
                 </span>
               </div>
-              <div class="text-xs font-black text-slate-800">${e.entity} ➔ <span class="text-blue-600">${e.val}</span></div>
-              <div class="text-[11px] text-slate-500 mt-1 line-clamp-2" title="${e.reason}">
-                <span class="font-medium text-slate-600">Why:</span> ${e.reason}
+              <div class="text-xs font-black text-slate-900 line-clamp-1">${e.entity} ➔ <span class="text-blue-600">${e.val}</span></div>
+              <div class="text-[11px] text-slate-600 mt-1 line-clamp-2 leading-relaxed" title="${e.reason}">
+                <span class="font-semibold text-slate-700">Context:</span> ${e.reason || e.raw}
               </div>
-              <div class="text-[10px] text-slate-400 mt-1.5 flex items-center justify-between">
-                <span><i class="fa-solid fa-file-lines mr-1"></i>${e.source}</span>
-                <span>${e.old} ➔ ${e.val}</span>
+              <div class="text-[10px] text-slate-400 mt-2 flex items-center justify-between border-t border-slate-100 pt-1.5">
+                <span><i class="fa-solid fa-file-lines mr-1 text-slate-400"></i>${e.source || "Dropzone"}</span>
+                <span class="text-blue-600 font-bold flex items-center gap-1">Inspect <i class="fa-solid fa-chevron-right text-[8px]"></i></span>
               </div>
             `;
             eventsCol.appendChild(card);
@@ -204,18 +280,18 @@
 
       const keys = Object.keys(state);
       if (keys.length === 0) {
-        summaryDiv.innerHTML = `<div class="col-span-4 text-xs text-slate-400 italic">No entities initialized at this playhead.</div>`;
+        summaryDiv.innerHTML = `<div class="col-span-4 text-xs text-slate-400 italic">No entities active at this playhead position.</div>`;
         return;
       }
 
       keys.forEach(k => {
         const item = state[k];
         const card = document.createElement("div");
-        card.className = "p-3 bg-slate-50 rounded-lg border border-slate-200 text-xs";
+        card.className = "p-3 bg-slate-50 rounded-xl border border-slate-200 text-xs shadow-2xs";
         card.innerHTML = `
-          <div class="text-[11px] font-bold text-slate-500 uppercase">${k}</div>
-          <div class="text-sm font-black text-slate-800 mt-0.5 text-blue-700">${item.value}</div>
-          <div class="text-[10px] text-slate-400 mt-1">Updated: ${item.updated}</div>
+          <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">${k}</div>
+          <div class="text-sm font-black text-slate-800 mt-0.5 text-blue-700 truncate">${item.value}</div>
+          <div class="text-[10px] text-slate-400 mt-1"><i class="fa-regular fa-clock mr-1"></i>${item.updated}</div>
         `;
         summaryDiv.appendChild(card);
       });
@@ -223,10 +299,108 @@
 
     function onScrub(val) {
       currentPlayheadIdx = parseInt(val);
-      const timestamps = ["Genesis (T0)", "2026-09-01", "2026-09-03", "2026-09-04", "2026-09-06", "2026-09-07", "2026-09-08 15:00", "2026-09-08 17:00"];
-      document.getElementById("playhead-label").innerText = timestamps[Math.min(currentPlayheadIdx, timestamps.length - 1)];
+      const label = (liveTimeline && liveTimeline.length > 0) ? (liveTimeline[Math.min(currentPlayheadIdx - 1, liveTimeline.length - 1)] || "Latest") : "Latest";
+      document.getElementById("playhead-label").innerText = label;
       renderMatrix();
     }
+
+    /* --- Interactive Event Inspector & Causal Chain --- */
+    function openEventInspector(e) {
+      currentInspectedEvent = e;
+      document.getElementById("modal-title").innerText = `${e.entity} ➔ ${e.val}`;
+      document.getElementById("modal-topic").innerText = e.topic;
+      document.getElementById("modal-timestamp").innerText = e.timestamp;
+      document.getElementById("modal-change").innerHTML = `${e.entity} <span class="text-blue-600 font-black">➔ ${e.val}</span>`;
+      document.getElementById("modal-transition").innerText = `Previous Value: ${e.old} ➔ New Value: ${e.val}`;
+      document.getElementById("modal-full-text").innerText = e.reason || e.raw || "No raw text recorded.";
+      document.getElementById("modal-source").innerText = e.source || "Dropzone Ingestion";
+      document.getElementById("modal-modality").innerText = e.modality || "COMMITTED";
+
+      // Build Local Causal Chain
+      const chainContainer = document.getElementById("modal-causal-chain");
+      chainContainer.innerHTML = "";
+
+      // Find preceding related events (parents)
+      const sameTopicEvents = SAMPLE_MATRIX.events.filter(item => item.topic === e.topic || item.entity === e.entity);
+      const currentIdx = sameTopicEvents.findIndex(item => item.id === e.id);
+
+      const parents = sameTopicEvents.slice(Math.max(0, currentIdx - 1), currentIdx);
+      const children = sameTopicEvents.slice(currentIdx + 1, currentIdx + 2);
+
+      // Parent Block
+      if (parents.length > 0) {
+        parents.forEach(p => {
+          chainContainer.innerHTML += `
+            <div class="p-3 bg-amber-50/70 border border-amber-200 rounded-lg text-xs">
+              <div class="flex items-center justify-between font-bold text-amber-800 mb-1">
+                <span><i class="fa-solid fa-arrow-up text-amber-600 mr-1"></i> Preceding State (Parent)</span>
+                <span class="text-[10px] font-normal text-amber-700">${p.timestamp}</span>
+              </div>
+              <div class="font-bold text-slate-800">${p.entity} ➔ ${p.val}</div>
+              <div class="text-[11px] text-slate-600 mt-0.5 line-clamp-1">${p.reason || p.raw}</div>
+            </div>
+          `;
+        });
+      } else {
+        chainContainer.innerHTML += `
+          <div class="p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-[11px] text-slate-500 italic">
+            <i class="fa-solid fa-circle-info text-blue-500 mr-1"></i> Genesis Event (No preceding parents in this track)
+          </div>
+        `;
+      }
+
+      // Active Event Block
+      chainContainer.innerHTML += `
+        <div class="p-3 bg-emerald-50 border-2 border-emerald-400 rounded-lg text-xs shadow-xs">
+          <div class="flex items-center justify-between font-black text-emerald-800 mb-1">
+            <span><i class="fa-solid fa-circle-dot text-emerald-600 mr-1"></i> Active Mutation (This Event)</span>
+            <span class="text-[10px] font-normal text-emerald-700">${e.timestamp}</span>
+          </div>
+          <div class="font-black text-slate-900">${e.entity} ➔ <span class="text-emerald-700">${e.val}</span></div>
+          <div class="text-[11px] text-slate-700 mt-0.5">${e.reason || e.raw}</div>
+        </div>
+      `;
+
+      // Children Block
+      if (children.length > 0) {
+        children.forEach(c => {
+          chainContainer.innerHTML += `
+            <div class="p-3 bg-blue-50/70 border border-blue-200 rounded-lg text-xs">
+              <div class="flex items-center justify-between font-bold text-blue-800 mb-1">
+                <span><i class="fa-solid fa-arrow-down text-blue-600 mr-1"></i> Subsequent Impact (Consequence)</span>
+                <span class="text-[10px] font-normal text-blue-700">${c.timestamp}</span>
+              </div>
+              <div class="font-bold text-slate-800">${c.entity} ➔ ${c.val}</div>
+              <div class="text-[11px] text-slate-600 mt-0.5 line-clamp-1">${c.reason || c.raw}</div>
+            </div>
+          `;
+        });
+      }
+
+      // Hook up scrub button
+      document.getElementById("modal-scrub-btn").onclick = () => {
+        const slider = document.getElementById("scrubber-slider");
+        slider.value = e.time_idx;
+        onScrub(e.time_idx);
+        closeModal();
+      };
+
+      document.getElementById("inspector-modal").classList.remove("hidden");
+    }
+
+    function closeModal() {
+      document.getElementById("inspector-modal").classList.add("hidden");
+    }
+
+    function closeModalOnBackdrop(e) {
+      if (e.target.id === "inspector-modal") {
+        closeModal();
+      }
+    }
+
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") closeModal();
+    });
 
     async function loadLiveData() {
       let data = null;
@@ -247,10 +421,11 @@
       }
 
       if (data && data.events && data.events.length > 0) {
+        liveTimeline = data.timeline || liveTimeline;
         SAMPLE_MATRIX.topics = data.topics && data.topics.length ? data.topics : SAMPLE_MATRIX.topics;
         SAMPLE_MATRIX.events = data.events.map((e, idx) => ({
           id: e.id || `e_${idx}`,
-          time_idx: Math.max(1, data.timeline.indexOf(e.timestamp) + 1),
+          time_idx: Math.max(1, (data.timeline ? data.timeline.indexOf(e.timestamp) : idx) + 1),
           timestamp: e.timestamp,
           topic: e.topic,
           entity: e.entity,
@@ -258,20 +433,20 @@
           val: e.new_value,
           old: e.old_value,
           reason: e.causal_reason || e.raw_text,
+          raw: e.raw_text,
+          modality: e.modality || "COMMITTED",
           source: e.source || "Dropzone Ingest"
         }));
-        const maxIdx = Math.max(1, data.timeline.length);
+        const maxIdx = Math.max(1, (data.timeline ? data.timeline.length : SAMPLE_MATRIX.events.length));
         document.getElementById("scrubber-slider").max = maxIdx;
         document.getElementById("scrubber-slider").value = maxIdx;
         onScrub(maxIdx);
         return;
       }
 
-      loadSampleData();
-    }
-
-    function loadSampleData() {
-      currentPlayheadIdx = 7;
+      // Default sample fallback
+      liveTimeline = ["2026-09-01", "2026-09-03", "2026-09-04", "2026-09-06", "2026-09-07", "2026-09-08 15:00", "2026-09-08 17:00"];
+      document.getElementById("scrubber-slider").max = 7;
       document.getElementById("scrubber-slider").value = 7;
       onScrub(7);
     }
