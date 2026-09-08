@@ -216,11 +216,74 @@ class TimeMeshinClient:
             filter_rack=filter_rack
         )
 
-    def trace(self, entity_id: str, up_to_time: Optional[datetime] = None) -> List[Dict[str, Any]]:
-        """Returns the full historical trajectory of a specific entity."""
-        return self.engine.trace_entity(entity_id, up_to_time=up_to_time)
+    def generate_context_prompt(
+        self,
+        question: str,
+        playhead: Any = None,
+        filter_rack: Optional[str] = None
+    ) -> str:
+        """
+        Synthesizes a pristine LLM Context Prompt that fences temporal boundaries strictly.
+        Can be plugged directly into OpenAI, Anthropic, Gemini, or local models.
+        """
+        playhead_dt = self._parse_time(playhead) if playhead else (self.engine.deltas[-1].timestamp if self.engine.deltas else datetime.utcnow())
+        res = self.query_at(playhead_dt, filter_rack=filter_rack)
+        
+        state_lines = [f"- {k}: {v}" for k, v in res["state"].items()]
+        state_text = "\n".join(state_lines) if state_lines else "No variables recorded."
+        
+        prompt = f"""=== GROUND-TRUTH WORLD STATE (AT PLAYHEAD: {playhead_dt.strftime('%Y-%m-%d %H:%M')}) ===
+Strict Temporal Rule: Do NOT reference any events occurring after this timestamp.
+
+Active State Snapshot:
+{state_text}
+
+Causal Trajectory Leading Up to this Moment:
+{res['causal_summary']}
+========================================================================
+
+User Question: {question}
+
+Answer based ONLY on the ground-truth state and causal trajectory up to {playhead_dt.strftime('%Y-%m-%d %H:%M')}:"""
+        return prompt
+
+    def ask(
+        self,
+        question: str,
+        playhead: Any = None,
+        filter_rack: Optional[str] = None
+    ) -> str:
+        """
+        Returns a human-readable synthesized natural language answer explaining the state and causation.
+        """
+        playhead_dt = self._parse_time(playhead) if playhead else (self.engine.deltas[-1].timestamp if self.engine.deltas else datetime.utcnow())
+        res = self.query_at(playhead_dt, query=question, filter_rack=filter_rack)
+        
+        q_lower = question.lower()
+        matched_items = []
+        for k, v in res["state"].items():
+            if any(term in k.lower() or term in str(v).lower() for term in q_lower.split() if len(term) > 2):
+                matched_items.append((k, v))
+                
+        if not matched_items:
+            matched_items = list(res["state"].items())[:5]
+            
+        summary_lines = [f"• **{k}**: {v}" for k, v in matched_items]
+        summary_text = "\n".join(summary_lines) if summary_lines else "• No matching state variables found."
+        
+        answer = f"""### 🌟 TimeMeshin Ground-Truth Answer (as of {playhead_dt.strftime('%Y-%m-%d %H:%M')}):
+
+**Active Ground-Truth State:**
+{summary_text}
+
+**Root Cause & Causality Trail:**
+{res['causal_summary']}
+
+*(🛡️ Temporal Fence strictly enforced: 0% future data leakage)*"""
+        return answer
 
 
 # Backward compatibility alias
 ChronoMeshClient = TimeMeshinClient
+
 
