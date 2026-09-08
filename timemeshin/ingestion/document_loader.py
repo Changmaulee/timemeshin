@@ -121,31 +121,66 @@ class DocumentLoader:
         path = Path(file_path)
         events = []
         curr_time = datetime.utcnow()
-        
+
+        # 1. Try PyMuPDF (fitz) or pypdf text stream extraction
         try:
-            import pypdf
-            reader = pypdf.PdfReader(str(path))
-            for idx, page in enumerate(reader.pages):
-                page_text = page.extract_text() or ""
-                for line in page_text.split("\n"):
-                    clean = line.strip()
-                    if len(clean) > 10:
-                        events.append({
-                            "timestamp": curr_time.strftime("%Y-%m-%d %H:%M"),
-                            "text": f"[Page {idx+1}] {clean}"
-                        })
-        except Exception:
-            with open(path, "rb") as f:
-                content = f.read()
-            strings = re.findall(rb'[\x20-\x7E]{15,}', content)
-            for s in strings[:50]:
+            import fitz
+            doc = fitz.open(str(path))
+            for idx, page in enumerate(doc):
+                page_text = page.get_text("text") or ""
+                if page_text.strip():
+                    for line in page_text.split("\n"):
+                        clean = line.strip()
+                        if len(clean) > 10:
+                            events.append({
+                                "timestamp": curr_time.strftime("%Y-%m-%d %H:%M"),
+                                "text": f"[Page {idx+1}] {clean}"
+                            })
+
+            # 2. If no selectable text stream found (scanned or screenshot PDF), run OCR
+            if not events:
+                print(f"[*] PDF contains no raw text streams. Running OCR on {len(doc)} pages...")
                 try:
-                    events.append({
-                        "timestamp": curr_time.strftime("%Y-%m-%d %H:%M"),
-                        "text": s.decode('latin1', errors='ignore')
-                    })
-                except Exception:
-                    pass
+                    import winocr
+                    from PIL import Image
+                    import io
+
+                    for idx, page in enumerate(doc):
+                        pix = page.get_pixmap(dpi=150)
+                        img = Image.open(io.BytesIO(pix.tobytes("png")))
+                        res = winocr.recognize_pil_sync(img, lang="en")
+                        ocr_text = res.get("text", "") if isinstance(res, dict) else getattr(res, "text", "")
+                        
+                        if ocr_text:
+                            for paragraph in ocr_text.split("\n"):
+                                clean = paragraph.strip()
+                                if len(clean) > 15:
+                                    events.append({
+                                        "timestamp": curr_time.strftime("%Y-%m-%d %H:%M"),
+                                        "text": f"[Page {idx+1}] {clean}"
+                                    })
+                except Exception as ocr_err:
+                    print(f"[!] OCR fallback error: {ocr_err}")
+
+        except Exception as e:
+            print(f"[!] PyMuPDF extraction failed: {e}")
+
+        # 3. Fallback pypdf if fitz was unavailable
+        if not events:
+            try:
+                import pypdf
+                reader = pypdf.PdfReader(str(path))
+                for idx, page in enumerate(reader.pages):
+                    page_text = page.extract_text() or ""
+                    for line in page_text.split("\n"):
+                        clean = line.strip()
+                        if len(clean) > 10:
+                            events.append({
+                                "timestamp": curr_time.strftime("%Y-%m-%d %H:%M"),
+                                "text": f"[Page {idx+1}] {clean}"
+                            })
+            except Exception:
+                pass
 
         return events
 

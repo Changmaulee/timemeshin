@@ -215,8 +215,9 @@ class FolderWatcher:
         """Scans dropzone directory for any new files."""
         total_ingested = 0
         supported_exts = {".html", ".htm", ".pdf", ".md", ".txt", ".json", ".csv"}
+        ignored_names = {"matrix_data.json", "spatio_temporal_matrix.html", ".processed_files.json", "cloud_matrix.json", "timeline_memory.db"}
         for item in self.watch_dir.iterdir():
-            if item.is_file() and item.suffix.lower() in supported_exts and item.name not in self.processed_files:
+            if item.is_file() and item.suffix.lower() in supported_exts and item.name not in self.processed_files and item.name not in ignored_names:
                 total_ingested += self.process_file(item)
         return total_ingested
 
