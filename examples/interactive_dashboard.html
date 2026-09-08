@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TimeMeshin — Interactive Time-Travel Memory Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #F8FAFC;
+            --surface: #FFFFFF;
+            --border: #E2E8F0;
+            --accent-blue: #2563EB;
+            --accent-green: #059669;
+            --accent-red: #DC2626;
+            --accent-purple: #7C3AED;
+            --text-heading: #0F172A;
+            --text-body: #334155;
+            --text-muted: #64748B;
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.06), 0 4px 6px -4px rgba(0, 0, 0, 0.04);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+            background-color: var(--bg);
+            color: var(--text-body);
+            line-height: 1.5;
+            padding: 30px 20px;
+        }
+
+        .app-container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        /* HEADER */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+            padding-bottom: 16px;
+            border-bottom: 2px solid var(--border);
+        }
+
+        .header-title {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .header-title h1 {
+            font-size: 26px;
+            font-weight: 800;
+            color: var(--text-heading);
+            letter-spacing: -0.5px;
+        }
+
+        .badge {
+            background: #EFF6FF;
+            border: 1px solid #BFDBFE;
+            color: var(--accent-blue);
+            font-size: 11px;
+            font-weight: 700;
+            padding: 4px 10px;
+            border-radius: 9999px;
+            text-transform: uppercase;
+        }
+
+        .quick-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            padding: 8px 14px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            color: var(--text-body);
+        }
+
+        .btn:hover { background: #F1F5F9; border-color: #CBD5E1; }
+        .btn-primary { background: var(--accent-blue); color: #FFFFFF; border-color: var(--accent-blue); }
+        .btn-primary:hover { background: #1D4ED8; }
+
+        /* 3-COLUMN WORKFLOW GRID */
+        .workflow-grid {
+            display: grid;
+            grid-template-columns: 360px 1fr;
+            gap: 24px;
+            margin-bottom: 24px;
+        }
+
+        @media (max-width: 960px) {
+            .workflow-grid { grid-template-columns: 1fr; }
+        }
+
+        .panel {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 22px;
+            box-shadow: var(--shadow);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .panel-title {
+            font-size: 14px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--text-heading);
+        }
+
+        /* INGEST PANEL */
+        textarea {
+            width: 100%;
+            height: 140px;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 12px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12.5px;
+            color: var(--text-body);
+            background: #F8FAFC;
+            resize: none;
+            margin-bottom: 12px;
+            outline: none;
+        }
+
+        textarea:focus { border-color: var(--accent-blue); background: #FFFFFF; }
+
+        .delta-stream {
+            flex-grow: 1;
+            height: 280px;
+            overflow-y: auto;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 10px;
+            background: #F8FAFC;
+            font-size: 12px;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .stream-entry {
+            background: #FFFFFF;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 8px 10px;
+            margin-bottom: 8px;
+            border-left: 3px solid var(--accent-blue);
+        }
+
+        .stream-time { color: var(--text-muted); font-size: 11px; margin-bottom: 2px; }
+        .stream-change { font-weight: 600; color: var(--text-heading); }
+
+        /* SCRUBBER & DIGEST PANEL */
+        .scrubber-box {
+            background: #F8FAFC;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 18px;
+            margin-bottom: 20px;
+        }
+
+        .scrubber-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .playhead-display {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--accent-blue);
+            background: #EFF6FF;
+            padding: 4px 10px;
+            border-radius: 6px;
+            border: 1px solid #BFDBFE;
+        }
+
+        input[type=range] {
+            width: 100%;
+            height: 8px;
+            border-radius: 5px;
+            background: #CBD5E1;
+            outline: none;
+            cursor: pointer;
+            accent-color: var(--accent-blue);
+        }
+
+        .timeline-ticks {
+            display: flex;
+            justify-content: space-between;
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-top: 8px;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        /* STATE MATRIX TABLE */
+        .matrix-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+            margin-bottom: 20px;
+        }
+
+        .matrix-table th {
+            text-align: left;
+            padding: 8px 10px;
+            color: var(--text-muted);
+            border-bottom: 2px solid var(--border);
+            font-size: 11px;
+            text-transform: uppercase;
+        }
+
+        .matrix-table td {
+            padding: 10px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .tag-committed {
+            background: #ECFDF5;
+            color: var(--accent-green);
+            border: 1px solid #A7F3D0;
+            font-size: 10px;
+            font-weight: 700;
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+
+        /* SPIT OUT & COMPARISON SECTION */
+        .query-box {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 16px;
+        }
+
+        .query-input {
+            flex-grow: 1;
+            padding: 10px 14px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-size: 14px;
+            outline: none;
+        }
+
+        .query-input:focus { border-color: var(--accent-blue); }
+
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+
+        .comp-card {
+            border-radius: 12px;
+            padding: 16px;
+            font-size: 13px;
+        }
+
+        .comp-fail {
+            background: #FEF2F2;
+            border: 1px solid #FECACA;
+            color: #991B1B;
+        }
+
+        .comp-pass {
+            background: #ECFDF5;
+            border: 1px solid #A7F3D0;
+            color: #065F46;
+        }
+
+        .comp-title {
+            font-weight: 700;
+            font-size: 12px;
+            text-transform: uppercase;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        /* CAUSAL DOMINO GRAPH */
+        .causal-chain {
+            margin-top: 14px;
+            padding: 12px;
+            background: #F8FAFC;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-size: 12.5px;
+        }
+
+        .chain-step {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 6px;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .chain-step:last-child { margin-bottom: 0; }
+        .chain-arrow { color: var(--text-muted); font-size: 14px; }
+    </style>
+</head>
+<body>
+
+<div class="app-container">
+    <!-- HEADER -->
+    <div class="header">
+        <div class="header-title">
+            <h1>⏳ TimeMeshin</h1>
+            <span class="badge">Visual Context Engine</span>
+        </div>
+        <div class="quick-actions">
+            <button class="btn" onclick="loadSampleScenario()">📥 Load 30-Day Enterprise Scenario</button>
+            <button class="btn btn-primary" onclick="window.open('../TIMEMESHIN_EXECUTIVE_SUMMARY.html')">📄 View 1-Pager Brief</button>
+        </div>
+    </div>
+
+    <!-- MAIN INTERACTIVE GRID -->
+    <div class="workflow-grid">
+        <!-- 1. INGEST PANEL -->
+        <div class="panel">
+            <div class="panel-title">📥 1. Ingest Stream (Write-Ahead Log)</div>
+            <textarea id="rawInput" placeholder="Type or paste real-time event logs, e.g.:
+[2026-09-02 14:00] Migrated database to DynamoDB due to write lock contention. New budget is $5000."></textarea>
+            <button class="btn btn-primary" style="margin-bottom: 14px;" onclick="ingestCustomText()">⚡ Ingest Event Delta</button>
+            
+            <div style="font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 6px;">Active P-Frame Stream</div>
+            <div class="delta-stream" id="deltaStream">
+                <!-- Stream items inserted by JS -->
+            </div>
+        </div>
+
+        <!-- 2. DIGEST & SPIT OUT PANEL -->
+        <div class="panel">
+            <!-- SCRUBBER SEEKBAR -->
+            <div class="panel-title">🎬 2. Digest & Playhead Scrubber (Time Travel)</div>
+            <div class="scrubber-box">
+                <div class="scrubber-header">
+                    <span style="font-size: 13px; font-weight: 600; color: var(--text-heading);">Playhead Timestamp:</span>
+                    <span class="playhead-display" id="playheadLabel">Day 2 (14:00)</span>
+                </div>
+                <input type="range" id="timeSlider" min="0" max="4" step="1" value="1" oninput="onScrub(this.value)">
+                <div class="timeline-ticks">
+                    <span>Day 1 (09:00)</span>
+                    <span>Day 2 (14:00)</span>
+                    <span>Day 3 (09:00)</span>
+                    <span>Day 4 (16:00)</span>
+                    <span>Day 5 (12:00)</span>
+                </div>
+            </div>
+
+            <!-- STATE MATRIX TABLE -->
+            <div style="font-size: 12px; font-weight: 700; color: var(--text-heading); text-transform: uppercase; margin-bottom: 8px;">Reconstructed Ground-Truth State at Playhead:</div>
+            <table class="matrix-table">
+                <thead>
+                    <tr>
+                        <th>Entity</th>
+                        <th>Topic Rack</th>
+                        <th>Active Value</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody id="stateMatrixBody">
+                    <!-- Matrix rows inserted by JS -->
+                </tbody>
+            </table>
+
+            <!-- 3. SPIT OUT & COMPARISON -->
+            <div class="panel-title" style="margin-top: 10px;">⚡ 3. Spit Out: Time-Travel Query vs. Standard RAG</div>
+            <div class="query-box">
+                <input type="text" class="query-input" id="queryInput" value="What is our active database and monthly cloud budget?" placeholder="Ask any natural language question...">
+                <button class="btn btn-primary" onclick="runQuery()">Run Query</button>
+            </div>
+
+            <div class="comparison-grid">
+                <!-- Standard RAG Failure -->
+                <div class="comp-card comp-fail">
+                    <div class="comp-title">❌ Standard Vector RAG (Hallucination)</div>
+                    <div id="ragResultText">
+                        <b>Retrieved Conflicting Chunks:</b><br>
+                        • "PostgreSQL ($100)"<br>
+                        • "DynamoDB ($5000)"<br>
+                        • "Postgres + Redis ($180)"<br>
+                        <i style="color: #B91C1C;">⚠️ 87% Future Leakage: Leaked Day 4's $180 budget into Day 2 question!</i>
+                    </div>
+                </div>
+
+                <!-- TimeMeshin Ground Truth -->
+                <div class="comp-card comp-pass">
+                    <div class="comp-title">🌟 TimeMeshin (Pristine Ground Truth)</div>
+                    <div id="timemeshinResultText">
+                        <b>100% Deterministic State:</b><br>
+                        • <b>Database:</b> DynamoDB<br>
+                        • <b>Monthly Budget:</b> $5,000<br>
+                        • <b>Lead:</b> Sarah<br>
+                        <i style="color: #047857;">🛡️ 0% Future Leakage: Hard temporal fence strictly enforced.</i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CAUSAL CHAIN -->
+            <div class="causal-chain" id="causalChainBox">
+                <div style="font-weight: 700; color: var(--text-heading); margin-bottom: 6px;">🔗 Transitive Causal Root Cause:</div>
+                <div class="chain-step"><span>[Day 1] Initial PostgreSQL Setup</span> <span class="chain-arrow">➔</span> <span>[Day 2] High Write Load</span> <span class="chain-arrow">➔</span> <span>[Day 2] Migrated to DynamoDB ($5k Budget)</span></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Mock Dataset for Interactive Demonstration
+const TIMELINE_STATIONS = [
+    {
+        day: "Day 1 (09:00)",
+        state: [
+            { entity: "Database", rack: "Infrastructure", val: "PostgreSQL", modality: "COMMITTED" },
+            { entity: "MonthlyBudget", rack: "Finance", val: "$1,000", modality: "COMMITTED" },
+            { entity: "TeamLead", rack: "EngineeringTeam", val: "Sarah", modality: "COMMITTED" }
+        ],
+        rag_output: "The database is PostgreSQL with $1,000 budget.",
+        tm_output: "• <b>Database:</b> PostgreSQL<br>• <b>Budget:</b> $1,000<br>• <b>Lead:</b> Sarah",
+        causal: "[Day 1] Initial architecture setup chosen by Sarah."
+    },
+    {
+        day: "Day 2 (14:00)",
+        state: [
+            { entity: "Database", rack: "Infrastructure", val: "DynamoDB", modality: "COMMITTED" },
+            { entity: "MonthlyBudget", rack: "Finance", val: "$5,000", modality: "COMMITTED" },
+            { entity: "TeamLead", rack: "EngineeringTeam", val: "Sarah", modality: "COMMITTED" }
+        ],
+        rag_output: "⚠️ Conflicting Chunks: Retrieved Postgres ($1k), DynamoDB ($5k), and Day 4's Redis ($180) simultaneously.",
+        tm_output: "• <b>Database:</b> DynamoDB<br>• <b>Budget:</b> $5,000<br>• <b>Lead:</b> Sarah",
+        causal: "[Day 1] Postgres ➔ [Day 2 14:00] Write Lock Contention ➔ Migrated to DynamoDB ($5,000)"
+    },
+    {
+        day: "Day 3 (09:00)",
+        state: [
+            { entity: "Database", rack: "Infrastructure", val: "DynamoDB", modality: "COMMITTED" },
+            { entity: "MonthlyBudget", rack: "Finance", val: "$5,000", modality: "COMMITTED" },
+            { entity: "TeamLead", rack: "EngineeringTeam", val: "Alex", modality: "COMMITTED" }
+        ],
+        rag_output: "⚠️ Lead is reported as both Sarah and Alex simultaneously.",
+        tm_output: "• <b>Database:</b> DynamoDB<br>• <b>Budget:</b> $5,000<br>• <b>Lead:</b> Alex",
+        causal: "[Day 2] Sarah Parental Leave ➔ [Day 3] Alex appointed Acting Lead."
+    },
+    {
+        day: "Day 4 (16:00)",
+        state: [
+            { entity: "Database", rack: "Infrastructure", val: "Postgres + Redis Cache", modality: "COMMITTED" },
+            { entity: "MonthlyBudget", rack: "Finance", val: "$1,800", modality: "COMMITTED" },
+            { entity: "TeamLead", rack: "EngineeringTeam", val: "Alex", modality: "COMMITTED" }
+        ],
+        rag_output: "Database is listed as DynamoDB, Postgres, and Redis all at once.",
+        tm_output: "• <b>Database:</b> Postgres + Redis Cache<br>• <b>Budget:</b> $1,800<br>• <b>Lead:</b> Alex",
+        causal: "[Day 2] DynamoDB $5k too expensive ➔ [Day 4] Alex refactored to Postgres + Redis ($1,800)."
+    },
+    {
+        day: "Day 5 (12:00)",
+        state: [
+            { entity: "Database", rack: "Infrastructure", val: "Postgres + Redis Cache", modality: "COMMITTED" },
+            { entity: "TrialTier", rack: "Infrastructure", val: "DragonflyDB", modality: "EVALUATING" },
+            { entity: "MonthlyBudget", rack: "Finance", val: "$1,800", modality: "COMMITTED" },
+            { entity: "TeamLead", rack: "EngineeringTeam", val: "Alex", modality: "COMMITTED" }
+        ],
+        rag_output: "Uncertain if DragonflyDB is active or past.",
+        tm_output: "• <b>Database:</b> Postgres + Redis (COMMITTED)<br>• <b>Trial:</b> DragonflyDB (EVALUATING @ 70% confidence)<br>• <b>Budget:</b> $1,800",
+        causal: "[Day 4] Redis operational ➔ [Day 5] Team evaluating DragonflyDB for memory efficiency."
+    }
+];
+
+let streamEvents = [
+    { time: "2026-09-01 09:00", text: "Database ➔ PostgreSQL | Initial system choice" },
+    { time: "2026-09-01 10:30", text: "TeamLead ➔ Sarah | Appointed tech lead" },
+    { time: "2026-09-02 14:00", text: "Database ➔ DynamoDB ($5k) | Write lock contention" },
+    { time: "2026-09-03 09:00", text: "TeamLead ➔ Alex | Leadership transition" },
+    { time: "2026-09-04 16:00", text: "Database ➔ Postgres + Redis ($1.8k) | Cost optimization" }
+];
+
+function renderStream() {
+    const container = document.getElementById("deltaStream");
+    container.innerHTML = "";
+    streamEvents.forEach(e => {
+        const div = document.createElement("div");
+        div.className = "stream-entry";
+        div.innerHTML = `<div class="stream-time">⏱️ ${e.time}</div><div class="stream-change">${e.text}</div>`;
+        container.appendChild(div);
+    });
+}
+
+function onScrub(index) {
+    const station = TIMELINE_STATIONS[index];
+    document.getElementById("playheadLabel").innerText = station.day;
+    
+    // Render State Matrix Table
+    const tbody = document.getElementById("stateMatrixBody");
+    tbody.innerHTML = "";
+    station.state.forEach(s => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+            <td><b>${s.entity}</b></td>
+            <td><span style="color: var(--text-muted); font-size:12px;">${s.rack}</span></td>
+            <td><span style="color: var(--accent-blue); font-weight: 700; font-family: 'JetBrains Mono';">${s.val}</span></td>
+            <td><span class="tag-committed">${s.modality}</span></td>
+        `;
+        tbody.appendChild(tr);
+    });
+
+    // Update Result text
+    document.getElementById("timemeshinResultText").innerHTML = `<b>100% Deterministic State at ${station.day}:</b><br>` + station.tm_output;
+    document.getElementById("ragResultText").innerHTML = `<b>Vector RAG Output:</b><br>` + station.rag_output;
+    document.getElementById("causalChainBox").innerHTML = `<div style="font-weight: 700; color: var(--text-heading); margin-bottom: 6px;">🔗 Transitive Causal Chain:</div><div class="chain-step">${station.causal}</div>`;
+}
+
+function ingestCustomText() {
+    const text = document.getElementById("rawInput").value.trim();
+    if (!text) return;
+    const now = new Date().toISOString().replace("T", " ").substring(0, 16);
+    streamEvents.unshift({ time: now, text: text });
+    renderStream();
+    document.getElementById("rawInput").value = "";
+    alert("✅ Event Delta Ingested & Spliced into Timeline!");
+}
+
+function loadSampleScenario() {
+    alert("✅ Loaded 30-Day Multi-DB Enterprise Scenario into Timeline!");
+    document.getElementById("timeSlider").value = 1;
+    onScrub(1);
+}
+
+function runQuery() {
+    const q = document.getElementById("queryInput").value;
+    const currentIdx = document.getElementById("timeSlider").value;
+    onScrub(currentIdx);
+}
+
+// Initial setup
+renderStream();
+onScrub(1);
+</script>
+
+</body>
+</html>

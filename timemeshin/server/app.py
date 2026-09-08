@@ -1,6 +1,9 @@
+import os
 from datetime import datetime
+from pathlib import Path
 from typing import Any, Dict, List, Optional
 from fastapi import FastAPI, HTTPException, Query
+from fastapi.responses import HTMLResponse
 from pydantic import BaseModel, Field
 
 from ..client import ChronoMeshClient as TimeMeshinClient
@@ -14,6 +17,8 @@ app = FastAPI(
 # Global persistent client
 client = TimeMeshinClient(db_path="timemeshin_server.db")
 
+STATIC_DASHBOARD_PATH = Path(__file__).resolve().parent.parent.parent / "examples" / "interactive_dashboard.html"
+
 
 class IngestRequest(BaseModel):
     text: str = Field(..., description="Raw text, chat message, or log entry to ingest")
@@ -25,6 +30,15 @@ class QueryRequest(BaseModel):
     playhead_time: str = Field(..., description="ISO timestamp to lock playhead to (e.g. 2026-09-02T16:00:00)")
     top_k: int = Field(3, description="Number of causal events to return")
     filter_rack: Optional[str] = Field(None, description="Optional topic rack filter")
+
+
+@app.get("/", response_class=HTMLResponse)
+def serve_dashboard():
+    """Serves the visual Ingest-Digest-SpitOut interactive web dashboard."""
+    if STATIC_DASHBOARD_PATH.exists():
+        with open(STATIC_DASHBOARD_PATH, "r", encoding="utf-8") as f:
+            return f.read()
+    return "<h1>TimeMeshin API is running. Visit /docs for Swagger.</h1>"
 
 
 @app.get("/health")
