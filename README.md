@@ -2,7 +2,7 @@
 
 > **The Deterministic Spatio-Temporal ($S \times T$) Video-Scrubber Context Engine for AI Agents**
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![License: Apache-2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 [![Python: 3.9+](https://img.shields.io/badge/Python-3.9%2B-brightgreen.svg)]()
 [![FastAPI: Ready](https://img.shields.io/badge/FastAPI-REST%20API-009688.svg)]()
 [![Docker: Supported](https://img.shields.io/badge/Docker-Ready-2496ED.svg)]()

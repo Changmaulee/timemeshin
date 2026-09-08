@@ -3,7 +3,7 @@
 **Author:** Chandramouli  
 **Affiliation:** Antigravity Deep Tech Research  
 **Date:** September 2026  
-**License:** Open-Core / MIT & BSL Dual-License  
+**License:** Apache-2.0 Open-Source License  
 **Repository:** `https://github.com/antigravity/timemeshin` (Local: `D:\antigravity\chronomesh`)
 
 ---
