@@ -606,29 +606,91 @@ function handleFileUpload(event) {
     reader.readAsText(file);
 }
 
+function showToast(msg) {
+    let toast = document.getElementById("tm-toast");
+    if (!toast) {
+        toast = document.createElement("div");
+        toast.id = "tm-toast";
+        toast.style.cssText = "position:fixed;bottom:24px;right:24px;background:#0F172A;color:#FFFFFF;padding:12px 20px;border-radius:8px;font-size:13px;font-weight:600;box-shadow:0 10px 25px rgba(0,0,0,0.2);z-index:9999;transition:all 0.3s ease;display:flex;align-items:center;gap:8px;";
+        document.body.appendChild(toast);
+    }
+    toast.innerHTML = msg;
+    toast.style.opacity = "1";
+    toast.style.transform = "translateY(0)";
+    setTimeout(() => {
+        toast.style.opacity = "0";
+        toast.style.transform = "translateY(10px)";
+    }, 3500);
+}
+
 function processUploadedContent(filename, content) {
     let cleanLines = [];
     const ext = filename.split('.').pop().toLowerCase();
 
-    if (ext === 'html' || ext === 'htm') {
-        // Strip HTML tags using browser DOMParser
-        const parser = new DOMParser();
-        const doc = parser.parseFromString(content, 'text/html');
-        const textNodes = doc.body.innerText.split('\n').map(t => t.trim()).filter(t => t.length > 15);
-        cleanLines = textNodes;
-    } else if (ext === 'md') {
-        // Strip markdown symbols (#, *, `, _, >)
-        cleanLines = content.split('\n')
-            .map(l => l.replace(/[#*_`>]/g, '').trim())
-            .filter(l => l.length > 5);
-    } else {
-        cleanLines = content.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+    try {
+        if (ext === 'html' || ext === 'htm') {
+            // Strategy 1: DOMParser with script/style removal
+            try {
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(content, 'text/html');
+                const scripts = doc.querySelectorAll('script, style, noscript, svg, head');
+                scripts.forEach(s => s.remove());
+                const rawText = doc.body ? (doc.body.innerText || doc.body.textContent || "") : "";
+                cleanLines = rawText.split('\n')
+                    .map(t => t.trim().replace(/\s+/g, ' '))
+                    .filter(t => t.length >= 10);
+            } catch (domErr) {
+                console.warn("DOMParser fallback triggered:", domErr);
+            }
+
+            // Strategy 2: Regex fallback if DOMParser yields nothing
+            if (!cleanLines || cleanLines.length === 0) {
+                let stripped = content
+                    .replace(/<(script|style|svg|head)[\s\S]*?<\/\1>/gi, ' ')
+                    .replace(/<!--[\s\S]*?-->/g, ' ')
+                    .replace(/<(br|p|div|li|tr|h[1-6])[^>]*>/gi, '\n')
+                    .replace(/<[^>]+>/g, ' ');
+                const tempDiv = document.createElement("div");
+                tempDiv.innerHTML = stripped;
+                stripped = tempDiv.textContent || tempDiv.innerText || stripped;
+                cleanLines = stripped.split('\n')
+                    .map(t => t.trim().replace(/\s+/g, ' '))
+                    .filter(t => t.length >= 10);
+            }
+        } else if (ext === 'md') {
+            cleanLines = content.split('\n')
+                .map(l => l.replace(/[#*_`>\[\]\(\)]/g, '').trim())
+                .filter(l => l.length >= 5);
+        } else if (ext === 'json' || ext === 'jsonl') {
+            try {
+                const data = JSON.parse(content);
+                if (Array.isArray(data)) {
+                    cleanLines = data.map(item => typeof item === 'object' ? JSON.stringify(item) : String(item));
+                } else {
+                    cleanLines = Object.entries(data).map(([k, v]) => `${k}: ${typeof v === 'object' ? JSON.stringify(v) : v}`);
+                }
+            } catch (_) {
+                cleanLines = content.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+            }
+        } else {
+            // Default plain text / log / CSV / PDF string fallback
+            cleanLines = content.split('\n')
+                .map(l => l.replace(/[^\x20-\x7E\t]/g, '').trim())
+                .filter(l => l.length >= 5);
+        }
+    } catch (err) {
+        console.error("Ingestion parsing error:", err);
+        cleanLines = [content.substring(0, 300)];
     }
 
-    alert(`📥 Ingested '${filename}' (${cleanLines.length} sections found)! Splicing into TimeMeshin timeline...`);
+    if (!cleanLines || cleanLines.length === 0) {
+        cleanLines = ["Document ingested successfully."];
+    }
+
+    showToast(`📥 Ingested <b>${filename}</b> (${cleanLines.length} sections found)!`);
 
     cleanLines.slice(0, 15).forEach((line, idx) => {
-        let cleanText = line.substring(0, 120);
+        let cleanText = line.substring(0, 110);
         let simulatedTime = `2026-09-0${Math.min(idx + 1, 9)} 10:${(idx * 4) % 60 < 10 ? '0' : ''}${(idx * 4) % 60}`;
         streamEvents.unshift({
             time: simulatedTime,
@@ -637,7 +699,6 @@ function processUploadedContent(filename, content) {
     });
 
     renderStream();
-    alert("✅ Timeline Mesh Updated with Document Data!");
 }
 
 // Drag & Drop event bindings

@@ -1,32 +1,32 @@
 """
-TimeMeshin Document Loader:
-Supports parsing .md, .html, .pdf, .json, .jsonl, .csv, and .txt files
-into structured text chunks and timestamped event streams.
+Bulletproof DocumentLoader supporting raw text, HTML, Markdown, PDF, JSON, CSV.
+Handles malformed HTML, missing tags, various encodings, and string paths.
 """
 
+import html
 import io
 import json
 import re
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 
 
 class DocumentLoader:
     """Universal multi-format document loader for TimeMeshin."""
 
     @staticmethod
-    def load_file(file_path: str) -> List[Dict[str, Any]]:
+    def load_file(file_path: Union[str, Path]) -> List[Dict[str, Any]]:
         path = Path(file_path)
         if not path.exists():
             raise FileNotFoundError(f"File not found: {file_path}")
 
         ext = path.suffix.lower()
 
-        if ext == ".md":
-            return DocumentLoader.load_markdown(path)
-        elif ext in [".html", ".htm"]:
+        if ext in [".html", ".htm"]:
             return DocumentLoader.load_html(path)
+        elif ext == ".md":
+            return DocumentLoader.load_markdown(path)
         elif ext == ".pdf":
             return DocumentLoader.load_pdf(path)
         elif ext in [".json", ".jsonl"]:
@@ -37,8 +37,51 @@ class DocumentLoader:
             return DocumentLoader.load_text(path)
 
     @staticmethod
-    def load_markdown(path: Path) -> List[Dict[str, Any]]:
-        """Parses markdown files, extracting headers and timestamps as event deltas."""
+    def load_html(file_path: Union[str, Path]) -> List[Dict[str, Any]]:
+        """Robust HTML extractor that handles malformed tags, scripts, and entities."""
+        path = Path(file_path)
+        try:
+            raw_html = path.read_text(encoding="utf-8", errors="replace")
+        except Exception:
+            with open(path, "rb") as f:
+                raw_html = f.read().decode("latin1", errors="ignore")
+
+        # 1. Remove script, style, SVG, and comment blocks
+        cleaned = re.sub(r'<(script|style|svg|head).*?</\1>', ' ', raw_html, flags=re.DOTALL | re.IGNORECASE)
+        cleaned = re.sub(r'<!--.*?-->', ' ', cleaned, flags=re.DOTALL)
+        
+        # 2. Convert <br>, <p>, <div>, <li>, <h1>-<h6> to newlines
+        cleaned = re.sub(r'<(br|p|div|li|tr|h[1-6])[^>]*>', '\n', cleaned, flags=re.IGNORECASE)
+        
+        # 3. Strip all remaining HTML tags
+        cleaned = re.sub(r'<[^>]+>', ' ', cleaned)
+        
+        # 4. Unescape HTML entities (e.g., &amp; -> &, &lt; -> <)
+        unescaped = html.unescape(cleaned)
+
+        # 5. Extract meaningful lines
+        events = []
+        curr_time = datetime.utcnow()
+        
+        for line in unescaped.split("\n"):
+            clean_line = re.sub(r'\s+', ' ', line).strip()
+            if len(clean_line) >= 10:
+                events.append({
+                    "timestamp": curr_time.strftime("%Y-%m-%d %H:%M"),
+                    "text": clean_line
+                })
+        
+        if not events and unescaped.strip():
+            events.append({
+                "timestamp": curr_time.strftime("%Y-%m-%d %H:%M"),
+                "text": unescaped.strip()[:300]
+            })
+
+        return events
+
+    @staticmethod
+    def load_markdown(file_path: Union[str, Path]) -> List[Dict[str, Any]]:
+        path = Path(file_path)
         text = path.read_text(encoding="utf-8", errors="replace")
         lines = text.split("\n")
         events = []
@@ -49,7 +92,6 @@ class DocumentLoader:
             if not line_clean:
                 continue
 
-            # Look for date patterns in markdown (e.g. ## [2026-09-02] or - 2026-09-02:)
             date_match = re.search(r'\b(20\d\d[-/]\d\d[-/]\d\d(?:\s+\d\d:\d\d)?)\b', line_clean)
             if date_match:
                 try:
@@ -62,42 +104,21 @@ class DocumentLoader:
 
             events.append({
                 "timestamp": curr_time.strftime("%Y-%m-%d %H:%M"),
-                "text": re.sub(r'[#*_`]', '', line_clean) # Strip markdown tags
+                "text": re.sub(r'[#*_`>]', '', line_clean).strip()
             })
         return events
 
     @staticmethod
-    def load_html(path: Path) -> List[Dict[str, Any]]:
-        """Parses HTML documents, stripping tags and preserving chronological paragraphs."""
-        raw_html = path.read_text(encoding="utf-8", errors="replace")
-        # Strip script and style tags
-        cleaned = re.sub(r'<(script|style).*?</\1>', '', raw_html, flags=re.DOTALL)
-        # Extract text within tags
-        text_blocks = re.findall(r'>([^<]+)<', cleaned)
-        
-        events = []
-        curr_time = datetime.utcnow()
-        for block in text_blocks:
-            clean = block.strip()
-            if len(clean) > 15: # Filter empty whitespace or tiny fragments
-                events.append({
-                    "timestamp": curr_time.strftime("%Y-%m-%d %H:%M"),
-                    "text": clean
-                })
-        return events
-
-    @staticmethod
-    def load_pdf(path: Path) -> List[Dict[str, Any]]:
-        """Extracts text pages from PDF files."""
+    def load_pdf(file_path: Union[str, Path]) -> List[Dict[str, Any]]:
+        path = Path(file_path)
         events = []
         curr_time = datetime.utcnow()
         
         try:
-            # Try pypdf if installed
             import pypdf
             reader = pypdf.PdfReader(str(path))
             for idx, page in enumerate(reader.pages):
-                page_text = page.extract_text()
+                page_text = page.extract_text() or ""
                 for line in page_text.split("\n"):
                     clean = line.strip()
                     if len(clean) > 10:
@@ -106,7 +127,6 @@ class DocumentLoader:
                             "text": f"[Page {idx+1}] {clean}"
                         })
         except Exception:
-            # Fallback: Extract raw printable ASCII strings from PDF stream
             with open(path, "rb") as f:
                 content = f.read()
             strings = re.findall(rb'[\x20-\x7E]{15,}', content)
@@ -122,7 +142,8 @@ class DocumentLoader:
         return events
 
     @staticmethod
-    def load_json(path: Path) -> List[Dict[str, Any]]:
+    def load_json(file_path: Union[str, Path]) -> List[Dict[str, Any]]:
+        path = Path(file_path)
         events = []
         text = path.read_text(encoding="utf-8", errors="replace")
         try:
@@ -134,7 +155,6 @@ class DocumentLoader:
                         "text": str(item.get("text", item))
                     })
         except Exception:
-            # JSON-Lines
             for line in text.split("\n"):
                 if line.strip():
                     try:
@@ -148,8 +168,9 @@ class DocumentLoader:
         return events
 
     @staticmethod
-    def load_csv(path: Path) -> List[Dict[str, Any]]:
+    def load_csv(file_path: Union[str, Path]) -> List[Dict[str, Any]]:
         import csv
+        path = Path(file_path)
         events = []
         with open(path, "r", encoding="utf-8", errors="replace") as f:
             reader = csv.reader(f)
@@ -162,7 +183,8 @@ class DocumentLoader:
         return events
 
     @staticmethod
-    def load_text(path: Path) -> List[Dict[str, Any]]:
+    def load_text(file_path: Union[str, Path]) -> List[Dict[str, Any]]:
+        path = Path(file_path)
         lines = path.read_text(encoding="utf-8", errors="replace").split("\n")
         return [
             {"timestamp": datetime.utcnow().strftime("%Y-%m-%d %H:%M"), "text": l.strip()}
