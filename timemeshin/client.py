@@ -169,11 +169,22 @@ class TimeMeshinClient:
                 flat_state[entity] = attrs
                 
         # Retrieve causal history leading up to this time
-        deltas_up_to = self.engine.get_deltas_up_to(playhead_dt, filter_rack=filter_rack)
+        if hasattr(self.engine, 'get_deltas_up_to'):
+            deltas_up_to = self.engine.get_deltas_up_to(playhead_dt, filter_rack=filter_rack)
+        else:
+            all_deltas = getattr(self.engine, 'deltas', getattr(self.engine, 'delta_log', []))
+            deltas_up_to = [
+                d for d in all_deltas
+                if getattr(d, 'timestamp', datetime.min) <= playhead_dt and (filter_rack is None or getattr(d, 'topic_rack', None) == filter_rack)
+            ]
         
         causal_steps = []
         for d in deltas_up_to[-6:]:
-            causal_steps.append(f"[{d.timestamp.strftime('%Y-%m-%d %H:%M')}] {d.entity_id} ➔ {d.new_value} ({d.causal_reason or 'Delta'})")
+            ent = getattr(d, 'entity_id', getattr(d, 'entity', 'Item'))
+            val = getattr(d, 'new_value', getattr(d, 'value', ''))
+            reason = getattr(d, 'causal_reason', getattr(d, 'reason', 'Delta'))
+            ts_str = d.timestamp.strftime('%Y-%m-%d %H:%M') if hasattr(d, 'timestamp') and isinstance(d.timestamp, datetime) else str(getattr(d, 'timestamp', ''))
+            causal_steps.append(f"[{ts_str}] {ent} ➔ {val} ({reason or 'Delta'})")
             
         causal_summary = " ➔\n".join(causal_steps) if causal_steps else "Initial State Established"
         
