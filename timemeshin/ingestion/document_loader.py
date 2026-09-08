@@ -59,22 +59,30 @@ class DocumentLoader:
         # 4. Unescape HTML entities (e.g., &amp; -> &, &lt; -> <)
         unescaped = html.unescape(cleaned)
 
-        # 5. Extract meaningful lines
+        # 5. Extract meaningful lines (filtering out pure box-drawing borders)
         events = []
         curr_time = datetime.utcnow()
+        box_drawing_pattern = re.compile(r'[\u2500-\u257F\u2580-\u259F\u25A0-\u25FF\u2014\u2013\u2015\u2550-\u256C═│─┌┐└┘├┤┬┴┼━║—–―¯_\|\+\=\<\>\^▲▼►◄~`#*]')
         
         for line in unescaped.split("\n"):
             clean_line = re.sub(r'\s+', ' ', line).strip()
-            if len(clean_line) >= 10:
-                events.append({
-                    "timestamp": curr_time.strftime("%Y-%m-%d %H:%M"),
-                    "text": clean_line
-                })
+            # Test how many alphanumeric characters exist
+            alpha_count = len(re.findall(r'[a-zA-Z0-9]', clean_line))
+            if alpha_count >= 3:
+                # Clean stray box chars from edges
+                stripped_box = box_drawing_pattern.sub(' ', clean_line)
+                stripped_box = re.sub(r'\s+', ' ', stripped_box).strip()
+                if len(stripped_box) >= 3:
+                    events.append({
+                        "timestamp": curr_time.strftime("%Y-%m-%d %H:%M"),
+                        "text": stripped_box
+                    })
         
         if not events and unescaped.strip():
+            fallback = box_drawing_pattern.sub(' ', unescaped.strip())
             events.append({
                 "timestamp": curr_time.strftime("%Y-%m-%d %H:%M"),
-                "text": unescaped.strip()[:300]
+                "text": re.sub(r'\s+', ' ', fallback).strip()[:300]
             })
 
         return events

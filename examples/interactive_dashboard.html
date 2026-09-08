@@ -624,6 +624,22 @@ function onScrub(index) {
     document.getElementById("causalChainBox").innerHTML = `<div style="font-weight: 700; color: var(--text-heading); margin-bottom: 6px;">🔗 Transitive Causal Chain:</div><div class="chain-step">${station.causal}</div>`;
 }
 
+function cleanDiagramText(str) {
+    if (!str) return "";
+    // Remove box-drawing Unicode characters, arrows, dashes, borders
+    return str
+        .replace(/[\u2500-\u257F\u2580-\u259F\u25A0-\u25FF\u2014\u2013\u2015\u2550-\u256C]/g, ' ')
+        .replace(/[═│─┌┐└┘├┤┬┴┼━║—–―¯_\|\+\=\<\>\^▲▼►◄~`#*]+/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+}
+
+function isDiagramBorderOrEmpty(str) {
+    const cleaned = cleanDiagramText(str);
+    const alphaCount = (cleaned.match(/[a-zA-Z0-9]/g) || []).length;
+    return alphaCount < 3;
+}
+
 function extractEntityFromLine(rawLine) {
     // Strip leading document tags like [doc.html]
     let line = rawLine.replace(/^\[.*?\]\s*/, '').trim();
@@ -631,47 +647,62 @@ function extractEntityFromLine(rawLine) {
     // 1. Arrow notation: "Entity ➔ Value | Context"
     if (line.includes("➔")) {
         const parts = line.split("➔");
-        const entity = parts[0].replace(/^[\[\(].*?[\]\)]\s*/, '').trim();
+        const entity = cleanDiagramText(parts[0]);
         const rest = parts[1].split("|");
-        const val = rest[0].trim();
-        const rack = rest[1] ? rest[1].trim().substring(0, 20) : "Context";
-        return { entity: entity.substring(0, 24), val: val.substring(0, 40), rack: rack };
+        const val = cleanDiagramText(rest[0]);
+        const rack = rest[1] ? cleanDiagramText(rest[1]).substring(0, 20) : "Architecture";
+        if (entity.length >= 2) {
+            return { entity: entity.substring(0, 28), val: val.substring(0, 40) || "Active", rack: rack };
+        }
     }
     
     // 2. Colon notation: "Key: Value"
     if (line.includes(":") && !line.startsWith("http")) {
         const parts = line.split(":");
-        const entity = parts[0].replace(/^[\[\(#\*\-\s|]+/, '').trim();
-        const val = parts.slice(1).join(":").replace(/[|]+/g, '').trim();
-        if (entity.length > 1 && entity.length < 30 && val.length > 0) {
-            return { entity: entity, val: val.substring(0, 40), rack: "Document" };
+        const entity = cleanDiagramText(parts[0]);
+        const val = cleanDiagramText(parts.slice(1).join(":"));
+        if (entity.length > 1 && entity.length < 32 && val.length > 0) {
+            return { entity: entity, val: val.substring(0, 40), rack: "Specification" };
         }
     }
 
-    // 3. Table / Column / Pipe Box notation: e.g. "| Bypass Tube (Add) | (Horizontal) |"
+    // 3. Pipe / Component Box notation: e.g. "| Bypass Tube (Add) | (Horizontal) |"
     if (line.includes("|")) {
-        const segments = line.split("|").map(s => s.replace(/[▲▼■•_\-+~]/g, '').trim()).filter(s => s.length > 2);
+        const segments = line.split("|")
+            .map(s => cleanDiagramText(s))
+            .filter(s => (s.match(/[a-zA-Z0-9]/g) || []).length >= 3);
         if (segments.length > 0) {
-            const entity = segments[0].substring(0, 24);
-            const val = segments.length > 1 ? segments.slice(1).join(" - ").substring(0, 36) : "Configured";
-            return { entity: entity, val: val, rack: "Component" };
+            const entity = segments[0].substring(0, 28);
+            const val = segments.length > 1 ? segments.slice(1).join(" - ").substring(0, 40) : "Operational";
+            return { entity: entity, val: val, rack: "Subsystem" };
         }
     }
 
-    // 4. Fallback: Clean sentence / words
-    const cleanWords = line.replace(/[|▲▼■•_\-+~#*`]/g, ' ').split(/\s+/).filter(w => w.length > 2);
-    const entity = cleanWords.slice(0, 3).join(" ") || "Item";
-    const val = cleanWords.slice(3).join(" ") || "Active";
-    return { entity: entity.substring(0, 24), val: val.substring(0, 36), rack: "Overview" };
+    // 4. Fallback: Clean sentence / words without decorative glyphs
+    const cleanedLine = cleanDiagramText(line);
+    const words = cleanedLine.split(" ").filter(w => w.length > 2);
+    if (words.length === 0) return null;
+
+    // Deduplicate repetitive words
+    const uniqueWords = [];
+    words.forEach(w => {
+        if (!uniqueWords.includes(w) || uniqueWords[uniqueWords.length - 1] !== w) {
+            uniqueWords.push(w);
+        }
+    });
+
+    const entity = uniqueWords.slice(0, 3).join(" ") || "Module";
+    const val = uniqueWords.slice(3).join(" ") || "Active / Initialized";
+    return { entity: entity.substring(0, 28), val: val.substring(0, 40), rack: "Architecture" };
 }
 
 function reconstructTimelineFromStream() {
     if (streamEvents.length === 0) return;
 
-    // Filter out purely decorative / empty stream events
+    // Filter out purely decorative / empty / border events
     const validEvents = streamEvents.filter(ev => {
         const raw = ev.text.replace(/^\[.*?\]\s*/, '').trim();
-        return !/^[\s|_\-+=\/\\▲▼~]+$/.test(raw) && raw.length >= 3;
+        return !isDiagramBorderOrEmpty(raw);
     });
 
     const eventsToProcess = validEvents.length > 0 ? validEvents : streamEvents;
@@ -683,11 +714,11 @@ function reconstructTimelineFromStream() {
 
     chronological.forEach((ev, idx) => {
         const parsed = extractEntityFromLine(ev.text);
-        if (parsed.entity) {
+        if (parsed && parsed.entity && parsed.entity !== "Item" && !isDiagramBorderOrEmpty(parsed.entity)) {
             cumulativeState[parsed.entity] = {
                 entity: parsed.entity,
-                rack: parsed.rack,
-                val: parsed.val,
+                rack: parsed.rack || "Component",
+                val: parsed.val || "Operational",
                 modality: "COMMITTED"
             };
         }
@@ -697,25 +728,26 @@ function reconstructTimelineFromStream() {
         
         let ragSummary = "";
         if (idx < chronological.length - 1) {
-            const futureItem = chronological[chronological.length - 1].text.replace(/^\[.*?\]\s*/, '').substring(0, 50);
+            const futureItem = cleanDiagramText(chronological[chronological.length - 1].text.replace(/^\[.*?\]\s*/, '')).substring(0, 45);
             ragSummary = `⚠️ Temporal Collision / Leakage: Conflates Step ${idx+1} with unreached future item "${futureItem}".`;
         } else {
             ragSummary = `Retrieved all chunks without temporal fencing: "${stateList.map(s => s.entity).join(', ')}"`;
         }
 
         let causalTrail = "";
+        const cleanEvText = cleanDiagramText(ev.text.replace(/^\[.*?\]\s*/, ''));
         if (idx === 0) {
-            causalTrail = `[${ev.time}] Initial state established: ${ev.text.substring(0, 60)}`;
+            causalTrail = `[${ev.time}] Initial state established: ${cleanEvText.substring(0, 60)}`;
         } else {
-            const prev = chronological[idx - 1];
-            causalTrail = `[${prev.time}] ➔ [${ev.time}] Delta applied: ${ev.text.substring(0, 60)}`;
+            const prevText = cleanDiagramText(chronological[idx - 1].text.replace(/^\[.*?\]\s*/, ''));
+            causalTrail = `[${prevText.substring(0, 25)}] ➔ [${ev.time}] Configured: ${cleanEvText.substring(0, 50)}`;
         }
 
         newStations.push({
             day: `Step ${idx + 1} (${ev.time.split(' ')[1] || ev.time})`,
             state: JSON.parse(JSON.stringify(stateList)),
             rag_output: ragSummary,
-            tm_output: tmSummary || ev.text.substring(0, 100),
+            tm_output: tmSummary || cleanEvText.substring(0, 100),
             causal: causalTrail
         });
     });
@@ -730,7 +762,10 @@ function reconstructTimelineFromStream() {
 
 function ingestCustomText() {
     const text = document.getElementById("rawInput").value.trim();
-    if (!text) return;
+    if (!text || isDiagramBorderOrEmpty(text)) {
+        showToast("⚠️ Please enter a meaningful text or state delta.");
+        return;
+    }
     const now = new Date().toISOString().replace("T", " ").substring(0, 16);
     streamEvents.unshift({ time: now, text: text });
     renderStream();
@@ -781,8 +816,8 @@ function processUploadedContent(filename, content) {
                 scripts.forEach(s => s.remove());
                 const rawText = doc.body ? (doc.body.innerText || doc.body.textContent || "") : "";
                 cleanLines = rawText.split('\n')
-                    .map(t => t.trim().replace(/\s+/g, ' '))
-                    .filter(t => t.length >= 3 && !/^[\s|_\-+=\/\\▲▼~]+$/.test(t));
+                    .map(t => t.trim())
+                    .filter(t => !isDiagramBorderOrEmpty(t));
             } catch (domErr) {
                 console.warn("DOMParser fallback triggered:", domErr);
             }
@@ -797,13 +832,13 @@ function processUploadedContent(filename, content) {
                 tempDiv.innerHTML = stripped;
                 stripped = tempDiv.textContent || tempDiv.innerText || stripped;
                 cleanLines = stripped.split('\n')
-                    .map(t => t.trim().replace(/\s+/g, ' '))
-                    .filter(t => t.length >= 3 && !/^[\s|_\-+=\/\\▲▼~]+$/.test(t));
+                    .map(t => t.trim())
+                    .filter(t => !isDiagramBorderOrEmpty(t));
             }
         } else if (ext === 'md') {
             cleanLines = content.split('\n')
                 .map(l => l.replace(/[#*_`>\[\]\(\)]/g, '').trim())
-                .filter(l => l.length >= 4 && !/^[\s|_\-+=\/\\▲▼~]+$/.test(l));
+                .filter(l => !isDiagramBorderOrEmpty(l));
         } else if (ext === 'json' || ext === 'jsonl') {
             try {
                 const data = JSON.parse(content);
@@ -813,12 +848,12 @@ function processUploadedContent(filename, content) {
                     cleanLines = Object.entries(data).map(([k, v]) => `${k}: ${typeof v === 'object' ? JSON.stringify(v) : v}`);
                 }
             } catch (_) {
-                cleanLines = content.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+                cleanLines = content.split('\n').map(l => l.trim()).filter(l => !isDiagramBorderOrEmpty(l));
             }
         } else {
             cleanLines = content.split('\n')
-                .map(l => l.replace(/[^\x20-\x7E\t]/g, '').trim())
-                .filter(l => l.length >= 4 && !/^[\s|_\-+=\/\\▲▼~]+$/.test(l));
+                .map(l => l.trim())
+                .filter(l => !isDiagramBorderOrEmpty(l));
         }
     } catch (err) {
         console.error("Ingestion parsing error:", err);
@@ -826,13 +861,13 @@ function processUploadedContent(filename, content) {
     }
 
     if (!cleanLines || cleanLines.length === 0) {
-        cleanLines = ["Document ingested successfully."];
+        cleanLines = ["Architecture document ingested."];
     }
 
     // Set query prompt to reflect the ingested document
-    document.getElementById("queryInput").value = `What is the active configuration / state in ${filename}?`;
+    document.getElementById("queryInput").value = `What is the active architecture and component configuration in ${filename}?`;
 
-    // Populate streamEvents
+    // Populate streamEvents with clean meaningful lines
     streamEvents = [];
     const sectionCount = Math.min(cleanLines.length, 12);
 
@@ -848,7 +883,7 @@ function processUploadedContent(filename, content) {
 
     renderStream();
     reconstructTimelineFromStream();
-    showToast(`✅ Ingested <b>${filename}</b> (${sectionCount} timeline stations created)!`);
+    showToast(`✅ Ingested <b>${filename}</b> (${sectionCount} clean architectural stages created)!`);
 }
 
 // Drag & Drop event bindings
