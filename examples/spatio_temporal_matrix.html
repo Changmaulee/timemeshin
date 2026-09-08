@@ -104,6 +104,7 @@
   </div>
 
   <!-- JavaScript Matrix Engine -->
+  <script src="matrix_data.js"></script>
   <script>
     const SAMPLE_MATRIX = {
       topics: [
@@ -228,34 +229,44 @@
     }
 
     async function loadLiveData() {
-      try {
-        const resp = await fetch("matrix_data.json");
-        if (resp.ok) {
-          const data = await resp.json();
-          if (data && data.events && data.events.length > 0) {
-            SAMPLE_MATRIX.topics = data.topics || SAMPLE_MATRIX.topics;
-            SAMPLE_MATRIX.events = data.events.map((e, idx) => ({
-              id: e.id || `e_${idx}`,
-              time_idx: data.timeline.indexOf(e.timestamp) + 1,
-              timestamp: e.timestamp,
-              topic: e.topic,
-              entity: e.entity,
-              attr: e.attribute,
-              val: e.new_value,
-              old: e.old_value,
-              reason: e.causal_reason || e.raw_text,
-              source: "Dropzone Ingest"
-            }));
-            const maxIdx = data.timeline.length;
-            document.getElementById("scrubber-slider").max = maxIdx;
-            document.getElementById("scrubber-slider").value = maxIdx;
-            onScrub(maxIdx);
-            return;
+      let data = null;
+
+      // 1. Check window.TIMEMESHIN_LIVE_DATA (loaded via matrix_data.js - 100% immune to local file CORS)
+      if (window.TIMEMESHIN_LIVE_DATA && window.TIMEMESHIN_LIVE_DATA.events && window.TIMEMESHIN_LIVE_DATA.events.length > 0) {
+        data = window.TIMEMESHIN_LIVE_DATA;
+      } else {
+        // 2. Fallback to fetch for web server / cloud environments
+        try {
+          const resp = await fetch("matrix_data.json?t=" + Date.now());
+          if (resp.ok) {
+            data = await resp.json();
           }
+        } catch (err) {
+          console.log("Fetch failed or blocked by local CORS, checking fallback.");
         }
-      } catch (err) {
-        console.log("No live matrix_data.json found, loading default sample.");
       }
+
+      if (data && data.events && data.events.length > 0) {
+        SAMPLE_MATRIX.topics = data.topics && data.topics.length ? data.topics : SAMPLE_MATRIX.topics;
+        SAMPLE_MATRIX.events = data.events.map((e, idx) => ({
+          id: e.id || `e_${idx}`,
+          time_idx: Math.max(1, data.timeline.indexOf(e.timestamp) + 1),
+          timestamp: e.timestamp,
+          topic: e.topic,
+          entity: e.entity,
+          attr: e.attribute,
+          val: e.new_value,
+          old: e.old_value,
+          reason: e.causal_reason || e.raw_text,
+          source: e.source || "Dropzone Ingest"
+        }));
+        const maxIdx = Math.max(1, data.timeline.length);
+        document.getElementById("scrubber-slider").max = maxIdx;
+        document.getElementById("scrubber-slider").value = maxIdx;
+        onScrub(maxIdx);
+        return;
+      }
+
       loadSampleData();
     }
 

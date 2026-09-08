@@ -51,15 +51,23 @@ class FolderWatcher:
     def __init__(
         self,
         watch_dir: str = "dropzone",
-        db_path: str = "timemeshin_chats.db",
-        matrix_output_path: str = "examples/matrix_data.json"
+        db_path: Optional[str] = None,
+        matrix_output_path: Optional[str] = None
     ):
         self.watch_dir = Path(watch_dir).resolve()
         self.watch_dir.mkdir(parents=True, exist_ok=True)
-        self.db_path = db_path
-        self.matrix_output_path = Path(matrix_output_path).resolve()
+        
+        # Default database and output JSON directly inside the watched folder
+        self.db_path = db_path or str(self.watch_dir / "timeline_memory.db")
+        if matrix_output_path:
+            self.matrix_output_path = Path(matrix_output_path).resolve()
+        else:
+            self.matrix_output_path = self.watch_dir / "matrix_data.json"
+
+        self.matrix_js_path = self.watch_dir / "matrix_data.js"
+
         self.loader = DocumentLoader()
-        self.client = TimeMeshinClient(db_path=db_path)
+        self.client = TimeMeshinClient(db_path=self.db_path)
         self.processed_files = set()
         self._load_processed_history()
 
@@ -215,7 +223,7 @@ class FolderWatcher:
         """Scans dropzone directory for any new files."""
         total_ingested = 0
         supported_exts = {".html", ".htm", ".pdf", ".md", ".txt", ".json", ".csv"}
-        ignored_names = {"matrix_data.json", "spatio_temporal_matrix.html", ".processed_files.json", "cloud_matrix.json", "timeline_memory.db"}
+        ignored_names = {"matrix_data.json", "matrix_data.js", "spatio_temporal_matrix.html", ".processed_files.json", "cloud_matrix.json", "timeline_memory.db"}
         for item in self.watch_dir.iterdir():
             if item.is_file() and item.suffix.lower() in supported_exts and item.name not in self.processed_files and item.name not in ignored_names:
                 total_ingested += self.process_file(item)
@@ -286,5 +294,12 @@ class FolderWatcher:
         }
 
         self.matrix_output_path.parent.mkdir(parents=True, exist_ok=True)
-        self.matrix_output_path.write_text(json.dumps(matrix_data, indent=2), encoding="utf-8")
+        json_str = json.dumps(matrix_data, indent=2)
+        self.matrix_output_path.write_text(json_str, encoding="utf-8")
+        
+        # Also write matrix_data.js for instant zero-CORS browser double-click loading
+        js_content = f"window.TIMEMESHIN_LIVE_DATA = {json_str};\n"
+        if hasattr(self, "matrix_js_path"):
+            self.matrix_js_path.write_text(js_content, encoding="utf-8")
+            
         return matrix_data
