@@ -10,6 +10,7 @@ from .ingestion.llm_client import LLMDeltaExtractor
 from .ingestion.document_loader import DocumentLoader
 from .storage.sqlite_store import SQLiteStorage
 from .client import ChronoMeshClient as TimeMeshinClient
+from .gemini_integration import GeminiTimeMeshinChat, GEMINI_TIMEMESHIN_TOOLS
 
 __version__ = "0.1.0"
 __all__ = [
@@ -24,5 +25,7 @@ __all__ = [
     "LLMDeltaExtractor",
     "DocumentLoader",
     "SQLiteStorage",
-    "TimeMeshinClient"
+    "TimeMeshinClient",
+    "GeminiTimeMeshinChat",
+    "GEMINI_TIMEMESHIN_TOOLS"
 ]

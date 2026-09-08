@@ -47,7 +47,19 @@ class LLMDeltaExtractor:
 
     def extract_deltas_from_text(self, text: str, timestamp: Optional[datetime] = None) -> List[DeltaFrame]:
         """Extracts structured DeltaFrames from raw unstructured text."""
-        event_time = timestamp or datetime.utcnow()
+        if isinstance(timestamp, str):
+            for fmt in ("%Y-%m-%d %H:%M:%S", "%Y-%m-%d %H:%M", "%Y-%m-%dT%H:%M:%S", "%Y-%m-%d"):
+                try:
+                    event_time = datetime.strptime(timestamp, fmt)
+                    break
+                except ValueError:
+                    pass
+            else:
+                event_time = datetime.utcnow()
+        elif isinstance(timestamp, datetime):
+            event_time = timestamp
+        else:
+            event_time = datetime.utcnow()
         extracted_events = []
 
         # Try LLM extraction if API key is provided

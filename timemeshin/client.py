@@ -105,7 +105,7 @@ class TimeMeshinClient:
         Ingests unstructured text into the spatio-temporal memory.
         Automatically extracts deltas, generates embeddings, updates engine, and writes to SQLite.
         """
-        event_time = timestamp or datetime.utcnow()
+        event_time = self._parse_time(timestamp) if timestamp is not None else datetime.utcnow()
         deltas = self.extractor.extract_deltas_from_text(text, timestamp=event_time)
         
         recorded = []
