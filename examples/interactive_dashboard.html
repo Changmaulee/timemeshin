@@ -381,10 +381,10 @@
             
             <!-- DRAG & DROP FILE UPLOAD BOX -->
             <div class="upload-dropzone" id="dropzone" onclick="document.getElementById('fileInput').click()">
-                <div class="upload-icon">📁</div>
+                <div class="upload-icon">📄</div>
                 <div class="upload-text">Click or Drag & Drop File to Ingest</div>
-                <div class="upload-sub">Supports .txt, .json, .jsonl, .log, .csv transcripts</div>
-                <input type="file" id="fileInput" style="display: none;" accept=".txt,.json,.jsonl,.log,.csv" onchange="handleFileUpload(event)">
+                <div class="upload-sub">Supports <b>.pdf</b>, <b>.md</b>, <b>.html</b>, <b>.json</b>, <b>.log</b>, <b>.csv</b>, <b>.txt</b></div>
+                <input type="file" id="fileInput" style="display: none;" accept=".pdf,.md,.html,.htm,.txt,.json,.jsonl,.log,.csv" onchange="handleFileUpload(event)">
             </div>
 
             <!-- MANUAL TEXT INPUT -->
@@ -607,21 +607,37 @@ function handleFileUpload(event) {
 }
 
 function processUploadedContent(filename, content) {
-    let lines = content.split("\n").filter(l => l.trim().length > 0);
-    alert(`📥 Uploaded '${filename}' with ${lines.length} entries! Processing deltas into TimeMeshin...`);
+    let cleanLines = [];
+    const ext = filename.split('.').pop().toLowerCase();
 
-    // Ingest first 15 lines as deltas
-    lines.slice(0, 15).forEach((line, idx) => {
+    if (ext === 'html' || ext === 'htm') {
+        // Strip HTML tags using browser DOMParser
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(content, 'text/html');
+        const textNodes = doc.body.innerText.split('\n').map(t => t.trim()).filter(t => t.length > 15);
+        cleanLines = textNodes;
+    } else if (ext === 'md') {
+        // Strip markdown symbols (#, *, `, _, >)
+        cleanLines = content.split('\n')
+            .map(l => l.replace(/[#*_`>]/g, '').trim())
+            .filter(l => l.length > 5);
+    } else {
+        cleanLines = content.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+    }
+
+    alert(`📥 Ingested '${filename}' (${cleanLines.length} sections found)! Splicing into TimeMeshin timeline...`);
+
+    cleanLines.slice(0, 15).forEach((line, idx) => {
         let cleanText = line.substring(0, 120);
         let simulatedTime = `2026-09-0${Math.min(idx + 1, 9)} 10:${(idx * 4) % 60 < 10 ? '0' : ''}${(idx * 4) % 60}`;
         streamEvents.unshift({
             time: simulatedTime,
-            text: cleanText
+            text: `[${filename}] ${cleanText}`
         });
     });
 
     renderStream();
-    alert("✅ Timeline Mesh Updated with Uploaded Data!");
+    alert("✅ Timeline Mesh Updated with Document Data!");
 }
 
 // Drag & Drop event bindings

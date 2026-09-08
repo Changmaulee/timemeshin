@@ -7,6 +7,7 @@ from .core.engine import ChronoMeshEngine as TimeMeshinEngine
 from .core.causal_dag import TimelessPhase2Engine as TimeMeshinPhase2Engine, AdvancedDelta, StateModality, EntityAliasGraph
 from .ingestion.extractor import StructuredDeltaExtractor
 from .ingestion.llm_client import LLMDeltaExtractor
+from .ingestion.document_loader import DocumentLoader
 from .storage.sqlite_store import SQLiteStorage
 from .client import ChronoMeshClient as TimeMeshinClient
 
@@ -21,6 +22,7 @@ __all__ = [
     "EntityAliasGraph",
     "StructuredDeltaExtractor",
     "LLMDeltaExtractor",
+    "DocumentLoader",
     "SQLiteStorage",
     "TimeMeshinClient"
 ]
