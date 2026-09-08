@@ -1,4 +1,4 @@
-﻿"""
+"""
 TimeMeshin CLI
 Command-line interface for TimeMeshin: deterministic spatio-temporal video-scrubber context engine.
 """
@@ -124,6 +124,12 @@ def main():
     init_parser.add_argument("--project", action="store_true", help="Install into current project's .agents/ directory")
     init_parser.add_argument("--path", type=str, default=None, help="Custom installation target directory")
 
+    # watch / dropzone
+    watch_parser = subparsers.add_parser("watch", help="Monitor a dropzone folder for incoming chats and align timeline")
+    watch_parser.add_argument("--folder", type=str, default="dropzone", help="Path to dropzone folder to watch")
+    watch_parser.add_argument("--db", type=str, default="timemeshin_chats.db", help="Timeline SQLite database path")
+    watch_parser.add_argument("--interval", type=float, default=2.0, help="Polling interval in seconds")
+    watch_parser.add_argument("--once", action="store_true", help="Process folder once and exit instead of continuous watching")
     # info
     subparsers.add_parser("info", help="Display TimeMeshin engine information")
 
@@ -138,6 +144,14 @@ def main():
     if args.command in ("install-skill", "init-agent"):
         print("Installing TimeMeshin Agent Skill & Plugin into Antigravity...")
         install_skill(global_install=not args.project, target_dir=args.path)
+    elif args.command == "watch":
+        from timemeshin.ingestion.folder_watcher import FolderWatcher
+        watcher = FolderWatcher(watch_dir=args.folder, db_path=args.db)
+        if args.once:
+            count = watcher.scan_once()
+            print(f"Processed {count} state events from {args.folder}.")
+        else:
+            watcher.watch_continuous(interval_sec=args.interval)
     elif args.command == "info":
         print("TimeMeshin Engine v0.1.0")
         print("Architecture: Spatio-Temporal (S x T) Video-Codec Context Engine")

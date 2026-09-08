@@ -8,6 +8,7 @@ from .core.causal_dag import TimelessPhase2Engine as TimeMeshinPhase2Engine, Adv
 from .ingestion.extractor import StructuredDeltaExtractor
 from .ingestion.llm_client import LLMDeltaExtractor
 from .ingestion.document_loader import DocumentLoader
+from .ingestion.folder_watcher import FolderWatcher
 from .storage.sqlite_store import SQLiteStorage
 from .client import ChronoMeshClient as TimeMeshinClient
 from .gemini_integration import GeminiTimeMeshinChat, GEMINI_TIMEMESHIN_TOOLS
@@ -24,6 +25,7 @@ __all__ = [
     "StructuredDeltaExtractor",
     "LLMDeltaExtractor",
     "DocumentLoader",
+    "FolderWatcher",
     "SQLiteStorage",
     "TimeMeshinClient",
     "GeminiTimeMeshinChat",
