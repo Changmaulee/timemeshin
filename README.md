@@ -1,11 +1,12 @@
-# ⏳ TimeMeshin
+﻿# ⏳ TimeMeshin
 
-> **The Deterministic Spatio-Temporal ($S \times T$) Video-Scrubber Context Engine for AI Agents**
+> **The Deterministic Spatio-Temporal ($S \times T$) Video-Scrubber Context Engine for AI Agents & LLM Retrieval**
 
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 [![Python: 3.9+](https://img.shields.io/badge/Python-3.9%2B-brightgreen.svg)]()
-[![FastAPI: Ready](https://img.shields.io/badge/FastAPI-REST%20API-009688.svg)]()
-[![Docker: Supported](https://img.shields.io/badge/Docker-Ready-2496ED.svg)]()
+[![PyPI: timemeshin](https://img.shields.io/badge/PyPI-timemeshin-blue.svg)]()
+[![Antigravity: Skill Enabled](https://img.shields.io/badge/Antigravity-Skill%20%26%20Plugin-orange.svg)]()
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Changmaulee/timemeshin/blob/main/examples/TimeMeshin_Colab_Quickstart.ipynb)
 
 ---
 
@@ -22,6 +23,26 @@ Traditional Vector RAG (Pinecone, Chroma, Milvus) flattens time into an atempora
 
 ---
 
+## 🚀 Quickstart
+
+### 1. Installation via PyPI
+```bash
+pip install timemeshin
+```
+
+### 2. Antigravity Agent Skill Integration (1-Command Install)
+Equip Google Antigravity or any agentic workflow with global TimeMeshin memory:
+
+```bash
+# Global installation for your machine (~/.gemini/config)
+timemeshin install-skill
+
+# Or workspace-only installation for your repository (.agents/)
+timemeshin install-skill --project
+```
+
+---
+
 ## 📊 Benchmark Results (500 Events, 30 Days, 100 Queries)
 
 | Evaluation Metric | Standard Vector RAG | TimeMeshin ($S \times T$) Engine |
@@ -32,13 +53,13 @@ Traditional Vector RAG (Pinecone, Chroma, Milvus) flattens time into an atempora
 
 ---
 
-## 🚀 1. Plug-and-Play Python Client (2 Lines of Code)
+## 🐍 Plug-and-Play Python Client (2 Lines of Code)
 
 ```python
 from timemeshin import TimeMeshinClient
 
 # 1. Initialize Client (Zero-config persistent SQLite memory)
-client = TimeMeshinClient(db_path="enterprise_memory.db", api_key="sk-...")
+client = TimeMeshinClient(db_path="enterprise_memory.db")
 
 # 2. Ingest raw text stream in real-time
 client.ingest("We migrated our database to DynamoDB on Tuesday due to write contention. Budget is now $5000.")
@@ -56,12 +77,19 @@ print(result["relevant_events"])
 
 ---
 
-## 🌐 2. REST API Server & Swagger Docs
+## 🌐 Interactive Demos
+
+* **Google Colab Notebook:** Run live with 1000+ GitHub commits in the cloud: [TimeMeshin_Colab_Quickstart.ipynb](examples/TimeMeshin_Colab_Quickstart.ipynb)
+* **Light-Theme Web Dashboard:** Open `examples/interactive_dashboard.html` in your browser for a local UI with live playhead slider and causal DAG visualization.
+
+---
+
+## 🌐 REST API Server
 
 Start the production server:
 
 ```bash
-uvicorn chronomesh.server.app:app --host 0.0.0.0 --port 8000
+timemeshin serve --host 0.0.0.0 --port 8000
 ```
 
 * **Swagger UI:** `http://localhost:8000/docs`
@@ -73,48 +101,30 @@ uvicorn chronomesh.server.app:app --host 0.0.0.0 --port 8000
 
 ---
 
-## 🐳 3. Docker Deployment (1 Command)
-
-```bash
-docker-compose up -d
-```
-
----
-
 ## 📁 Repository Structure
 
 ```
-D:\antigravity\chronomesh/
-├── timemeshin/                # TimeMeshin entrypoint SDK
-│   └── __init__.py
-├── chronomesh/
-│   ├── client.py              # High-level plug-and-play Python SDK
-│   ├── core/
-│   │   ├── frames.py          # DeltaFrame (P-Frame) & Keyframe (I-Frame)
-│   │   ├── engine.py          # Dual-Coordinate S x T Scrubber Engine
-│   │   └── causal_dag.py      # Transitive Causal DAGs & Git-Rebase Time Splicing
-│   ├── ingestion/
-│   │   ├── extractor.py       # JSON schema specification
-│   │   └── llm_client.py      # OpenAI / Gemini auto-ingestor
-│   ├── storage/
-│   │   └── sqlite_store.py    # Zero-config SQLite disk persistence
-│   └── server/
-│       └── app.py             # Production FastAPI REST API
-├── paper/
-│   └── TIMEMESHIN_RESEARCH_PAPER.md # Formal academic paper
-├── benchmarks/
-│   └── benchmark_30day.py     # 30-day 500-event automated benchmark
-├── examples/
-│   ├── plug_and_play_demo.py  # End-to-end commercial SDK demo
-│   ├── phase2_advanced_demo.py # Git-Rebase & Causal DAG verification
-│   └── real_chat_test.py      # Live transcript audit test
-├── Dockerfile                 # Production Docker image
-├── docker-compose.yml         # 1-click container deployment
-├── pyproject.toml             # Package configuration
-└── README.md                  # Documentation & Benchmarks
+timemeshin/
+├── .agents/                   # Antigravity Global & Project Skills / Plugins
+│   ├── plugins/timemeshin/
+│   └── skills/timemeshin/
+├── .github/workflows/         # Automated PyPI publication CI/CD
+├── timemeshin/                # Core Python Package
+│   ├── cli.py                 # CLI & Antigravity installer
+│   ├── client.py              # TimeMeshinClient SDK
+│   ├── core/                  # Keyframes, Deltas, & Video-Scrubber Engine
+│   ├── ingestion/             # Multi-format document loader & stream parser
+│   ├── storage/               # SQLite / transactional state store
+│   └── server/                # FastAPI REST endpoints
+├── paper/                     # Formal academic research paper
+├── benchmarks/                # Automated 30-day benchmark suite
+├── examples/                  # Interactive Dashboard & Colab Notebooks
+├── scripts/                   # Build, release, and installer scripts
+├── pyproject.toml             # Standard PEP 517/621 packaging
+└── README.md
 ```
 
 ---
 
 ## 📜 License
-MIT License. Commercial & Open-Source Friendly.
+Apache 2.0 License. Free for individuals, researchers, and commercial use.
