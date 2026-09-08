@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>TimeMeshin — Spatio-Temporal (S x T) Matrix Alignment</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; background-color: #f8fafc; color: #1e293b; }
+    .matrix-grid { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(280px, 1fr); gap: 12px; }
+    .swimlane { border-bottom: 2px solid #e2e8f0; }
+    .card-committed { border-left: 4px solid #10b981; background: #ffffff; }
+    .card-evaluating { border-left: 4px solid #f59e0b; background: #fffbeb; }
+    .card-future { opacity: 0.25; filter: grayscale(80%); }
+    .timeline-scrubber::-webkit-slider-thumb {
+      -webkit-appearance: none; appearance: none;
+      width: 22px; height: 22px; border-radius: 50%;
+      background: #2563eb; cursor: pointer; border: 3px solid #ffffff;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+    }
+  </style>
+</head>
+<body class="p-4 md:p-8">
+
+  <!-- Header & Playhead Controller -->
+  <div class="max-w-7xl mx-auto mb-6 bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+      <div>
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-lg bg-blue-600 flex items-center justify-center text-white font-bold text-xl shadow-md">
+            ⏳
+          </div>
+          <div>
+            <h1 class="text-2xl font-black tracking-tight text-slate-800">TimeMeshin Spatio-Temporal Matrix</h1>
+            <p class="text-sm text-slate-500 font-medium">Horizontal Timeline (<span class="text-blue-600 font-semibold">T-Axis →</span>) &times; Vertical Topic Swimlanes (<span class="text-emerald-600 font-semibold">S-Axis ↓</span>)</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="flex flex-wrap items-center gap-3">
+        <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200">
+          <i class="fa-solid fa-shield-check mr-1.5"></i> 0% Future Leakage
+        </span>
+        <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-800 border border-blue-200">
+          <i class="fa-solid fa-filter mr-1.5"></i> Noise Filter Active
+        </span>
+        <button onclick="loadSampleData()" class="px-3.5 py-1.5 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg border border-slate-300 transition">
+          <i class="fa-solid fa-rotate mr-1"></i> Reload Sample
+        </button>
+      </div>
+    </div>
+
+    <!-- Playhead Scrubber Bar -->
+    <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
+      <div class="flex justify-between items-center mb-2">
+        <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">
+          <i class="fa-solid fa-video text-blue-600 mr-1"></i> Playhead Position ($t \le T$):
+        </span>
+        <span id="playhead-label" class="text-sm font-black text-blue-700 bg-blue-50 px-3 py-0.5 rounded-full border border-blue-200">
+          2026-09-08 17:00:00 (Latest)
+        </span>
+      </div>
+      <input id="scrubber-slider" type="range" min="0" max="10" value="10" class="timeline-scrubber w-full h-2.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-600" oninput="onScrub(this.value)">
+      <div class="flex justify-between text-[11px] text-slate-400 mt-1.5 font-medium">
+        <span>T_0 (Genesis)</span>
+        <span>◄ Drag to scrub timeline backwards & forwards ►</span>
+        <span>T_Current</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main S x T Grid Layout -->
+  <div class="max-w-7xl mx-auto overflow-x-auto bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+    <div class="min-w-[900px]">
+      
+      <!-- Timeline Header Columns -->
+      <div class="grid grid-cols-12 gap-4 pb-4 border-b border-slate-200 text-xs font-bold text-slate-500 uppercase">
+        <div class="col-span-3 text-slate-700 flex items-center gap-1.5">
+          <i class="fa-solid fa-layer-group text-emerald-600"></i> Topic Swimlane (S ↓)
+        </div>
+        <div class="col-span-9 flex items-center justify-between text-blue-700">
+          <span><i class="fa-solid fa-arrow-right mr-1"></i> Chronological Timeline Events (T →)</span>
+          <span class="text-[11px] font-normal text-slate-400">Events gated by Playhead</span>
+        </div>
+      </div>
+
+      <!-- Swimlane Container -->
+      <div id="swimlanes-container" class="divide-y divide-slate-100">
+        <!-- Injected via JavaScript -->
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Ground Truth Active State Drawer -->
+  <div class="max-w-7xl mx-auto mt-6 bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+    <h3 class="text-sm font-bold text-slate-700 uppercase tracking-wider mb-3 flex items-center gap-2">
+      <i class="fa-solid fa-bolt text-amber-500"></i> Computed Ground Truth State at Playhead:
+    </h3>
+    <div id="active-state-summary" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
+      <!-- Injected dynamically -->
+    </div>
+  </div>
+
+  <!-- JavaScript Matrix Engine -->
+  <script>
+    const SAMPLE_MATRIX = {
+      topics: [
+        "Database & Storage",
+        "Auth & Security",
+        "Architecture & Core",
+        "Budget & Operations",
+        "UI & Frontend"
+      ],
+      events: [
+        { id: "e1", time_idx: 1, timestamp: "2026-09-01 10:00", topic: "Database & Storage", entity: "Database", attr: "Engine", val: "PostgreSQL", old: "None", reason: "Initial setup for MVP", source: "Slack #dev" },
+        { id: "e2", time_idx: 1, timestamp: "2026-09-01 10:30", topic: "Budget & Operations", entity: "MonthlyBudget", attr: "AmountUSD", val: "$2,000", old: "$0", reason: "Seed infrastructure allowance", source: "Email approval" },
+        { id: "e3", time_idx: 2, timestamp: "2026-09-03 14:00", topic: "Auth & Security", entity: "AuthService", attr: "Protocol", val: "JWT_Local", old: "None", reason: "Fast internal auth token generation", source: "PR #12" },
+        { id: "e4", time_idx: 3, timestamp: "2026-09-04 16:00", topic: "Database & Storage", entity: "Database", attr: "Engine", val: "DynamoDB", old: "PostgreSQL", reason: "Write lock contention at 10k RPS", source: "Incident #44" },
+        { id: "e5", time_idx: 3, timestamp: "2026-09-04 16:15", topic: "Budget & Operations", entity: "MonthlyBudget", attr: "AmountUSD", val: "$4,500", old: "$2,000", reason: "Managed DynamoDB throughput cost", source: "AWS Billing alert" },
+        { id: "e6", time_idx: 4, timestamp: "2026-09-06 11:00", topic: "Architecture & Core", entity: "ContextEngine", attr: "Model", val: "TimeMeshin_ST", old: "VectorRAG", reason: "Eliminate 87% temporal hallucination", source: "RFC Doc" },
+        { id: "e7", time_idx: 5, timestamp: "2026-09-07 09:30", topic: "Auth & Security", entity: "AuthService", attr: "Protocol", val: "OAuth2_Google", old: "JWT_Local", reason: "Enterprise SSO compliance", source: "Security audit" },
+        { id: "e8", time_idx: 6, timestamp: "2026-09-08 15:00", topic: "UI & Frontend", entity: "DashboardTheme", attr: "Theme", val: "Light_Mode_Clean", old: "Dark", reason: "Accessibility and daylight readability", source: "Design review" },
+        { id: "e9", time_idx: 7, timestamp: "2026-09-08 17:00", topic: "Database & Storage", entity: "CacheLayer", attr: "Engine", val: "Redis_Cluster", old: "None", reason: "Hot-key caching for read spikes", source: "Commit #a89aaad" }
+      ]
+    };
+
+    let currentPlayheadIdx = 7;
+
+    function renderMatrix() {
+      const container = document.getElementById("swimlanes-container");
+      container.innerHTML = "";
+
+      const activeState = {};
+
+      SAMPLE_MATRIX.topics.forEach(topic => {
+        const row = document.createElement("div");
+        row.className = "grid grid-cols-12 gap-4 py-4 items-center";
+
+        // Left Topic Label (S-Axis)
+        const labelCol = document.createElement("div");
+        labelCol.className = "col-span-3 pr-2";
+        labelCol.innerHTML = `
+          <div class="font-bold text-slate-800 text-sm flex items-center gap-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-blue-500"></span>
+            ${topic}
+          </div>
+          <div class="text-[11px] text-slate-400 font-medium mt-0.5">Active track</div>
+        `;
+
+        // Right Events Horizontal Stream (T-Axis)
+        const eventsCol = document.createElement("div");
+        eventsCol.className = "col-span-9 flex items-center gap-3 overflow-x-auto py-1";
+
+        const topicEvents = SAMPLE_MATRIX.events.filter(e => e.topic === topic);
+
+        if (topicEvents.length === 0) {
+          eventsCol.innerHTML = `<span class="text-xs text-slate-300 italic">No mutations in this rack</span>`;
+        } else {
+          topicEvents.forEach(e => {
+            const isFuture = e.time_idx > currentPlayheadIdx;
+            const card = document.createElement("div");
+            card.className = `flex-shrink-0 w-64 p-3 rounded-lg border shadow-xs transition-all duration-200 ${
+              isFuture ? 'card-future bg-slate-50 border-slate-200' : 'card-committed border-slate-200 shadow-sm'
+            }`;
+
+            if (!isFuture) {
+              activeState[e.entity] = { attribute: e.attr, value: e.val, updated: e.timestamp };
+            }
+
+            card.innerHTML = `
+              <div class="flex justify-between items-center mb-1">
+                <span class="text-[10px] font-bold text-slate-500"><i class="fa-regular fa-clock mr-1"></i>${e.timestamp}</span>
+                <span class="text-[9px] font-bold px-1.5 py-0.5 rounded ${isFuture ? 'bg-slate-200 text-slate-600' : 'bg-emerald-100 text-emerald-800'}">
+                  ${isFuture ? 'FUTURE' : 'COMMITTED'}
+                </span>
+              </div>
+              <div class="text-xs font-black text-slate-800">${e.entity} ➔ <span class="text-blue-600">${e.val}</span></div>
+              <div class="text-[11px] text-slate-500 mt-1 line-clamp-2" title="${e.reason}">
+                <span class="font-medium text-slate-600">Why:</span> ${e.reason}
+              </div>
+              <div class="text-[10px] text-slate-400 mt-1.5 flex items-center justify-between">
+                <span><i class="fa-solid fa-file-lines mr-1"></i>${e.source}</span>
+                <span>${e.old} ➔ ${e.val}</span>
+              </div>
+            `;
+            eventsCol.appendChild(card);
+          });
+        }
+
+        row.appendChild(labelCol);
+        row.appendChild(eventsCol);
+        container.appendChild(row);
+      });
+
+      renderStateSummary(activeState);
+    }
+
+    function renderStateSummary(state) {
+      const summaryDiv = document.getElementById("active-state-summary");
+      summaryDiv.innerHTML = "";
+
+      const keys = Object.keys(state);
+      if (keys.length === 0) {
+        summaryDiv.innerHTML = `<div class="col-span-4 text-xs text-slate-400 italic">No entities initialized at this playhead.</div>`;
+        return;
+      }
+
+      keys.forEach(k => {
+        const item = state[k];
+        const card = document.createElement("div");
+        card.className = "p-3 bg-slate-50 rounded-lg border border-slate-200 text-xs";
+        card.innerHTML = `
+          <div class="text-[11px] font-bold text-slate-500 uppercase">${k}</div>
+          <div class="text-sm font-black text-slate-800 mt-0.5 text-blue-700">${item.value}</div>
+          <div class="text-[10px] text-slate-400 mt-1">Updated: ${item.updated}</div>
+        `;
+        summaryDiv.appendChild(card);
+      });
+    }
+
+    function onScrub(val) {
+      currentPlayheadIdx = parseInt(val);
+      const timestamps = ["Genesis (T0)", "2026-09-01", "2026-09-03", "2026-09-04", "2026-09-06", "2026-09-07", "2026-09-08 15:00", "2026-09-08 17:00"];
+      document.getElementById("playhead-label").innerText = timestamps[Math.min(currentPlayheadIdx, timestamps.length - 1)];
+      renderMatrix();
+    }
+
+    async function loadLiveData() {
+      try {
+        const resp = await fetch("matrix_data.json");
+        if (resp.ok) {
+          const data = await resp.json();
+          if (data && data.events && data.events.length > 0) {
+            SAMPLE_MATRIX.topics = data.topics || SAMPLE_MATRIX.topics;
+            SAMPLE_MATRIX.events = data.events.map((e, idx) => ({
+              id: e.id || `e_${idx}`,
+              time_idx: data.timeline.indexOf(e.timestamp) + 1,
+              timestamp: e.timestamp,
+              topic: e.topic,
+              entity: e.entity,
+              attr: e.attribute,
+              val: e.new_value,
+              old: e.old_value,
+              reason: e.causal_reason || e.raw_text,
+              source: "Dropzone Ingest"
+            }));
+            const maxIdx = data.timeline.length;
+            document.getElementById("scrubber-slider").max = maxIdx;
+            document.getElementById("scrubber-slider").value = maxIdx;
+            onScrub(maxIdx);
+            return;
+          }
+        }
+      } catch (err) {
+        console.log("No live matrix_data.json found, loading default sample.");
+      }
+      loadSampleData();
+    }
+
+    function loadSampleData() {
+      currentPlayheadIdx = 7;
+      document.getElementById("scrubber-slider").value = 7;
+      onScrub(7);
+    }
+
+    // Initialize on load
+    window.addEventListener("DOMContentLoaded", () => {
+      loadLiveData();
+    });
+  </script>
+</body>
+</html>
