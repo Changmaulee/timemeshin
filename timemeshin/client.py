@@ -255,22 +255,37 @@ Answer based ONLY on the ground-truth state and causal trajectory up to {playhea
     ) -> str:
         """
         Conversational AI Assistant with temporal ground-truth memory.
-        Replies in natural conversation strictly based on the world state at the playhead.
+        Answers naturally based strictly on the world state at the playhead.
         """
         playhead_dt = self._parse_time(playhead) if playhead else (self.engine.deltas[-1].timestamp if self.engine.deltas else datetime.utcnow())
         res = self.query_at(playhead_dt, query=user_message)
+        time_str = playhead_dt.strftime("%Y-%m-%d %H:%M")
         
-        # Check if OpenAI or Gemini is available
-        api_key = os.environ.get("OPENAI_API_KEY") or os.environ.get("GEMINI_API_KEY")
-        if api_key and os.environ.get("OPENAI_API_KEY"):
+        # 1. Check for Gemini / OpenAI API keys for direct LLM generation
+        openai_key = os.environ.get("OPENAI_API_KEY")
+        gemini_key = os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY")
+        
+        prompt = self.generate_context_prompt(user_message, playhead=playhead_dt)
+        
+        if gemini_key:
+            try:
+                import google.generativeai as genai
+                genai.configure(api_key=gemini_key)
+                model = genai.GenerativeModel("gemini-1.5-flash")
+                response = model.generate_content(prompt)
+                if response and response.text:
+                    return response.text
+            except Exception:
+                pass
+
+        if openai_key:
             try:
                 import openai
-                prompt = self.generate_context_prompt(user_message, playhead=playhead_dt)
-                client_ai = openai.OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
+                client_ai = openai.OpenAI(api_key=openai_key)
                 resp = client_ai.chat.completions.create(
                     model=model_name or "gpt-4o-mini",
                     messages=[
-                        {"role": "system", "content": "You are a helpful, precise engineering assistant. Strictly adhere to the ground-truth state provided without leaking future information."},
+                        {"role": "system", "content": "You are a helpful, clear, and precise engineering assistant. Strictly adhere to the ground-truth state provided without leaking future information."},
                         {"role": "user", "content": prompt}
                     ]
                 )
@@ -278,27 +293,55 @@ Answer based ONLY on the ground-truth state and causal trajectory up to {playhea
             except Exception:
                 pass
 
-        # Built-in High-Fidelity Conversational Synthesis
-        q_lower = user_message.lower()
-        matched = []
-        for k, v in res["state"].items():
-            if any(term in k.lower() or term in str(v).lower() for term in q_lower.split() if len(term) > 2):
-                matched.append(f"{k} is currently set to **{v}**")
-                
-        time_str = playhead_dt.strftime("%Y-%m-%d %H:%M")
+        # 2. Built-in Conversational Intent Resolver (Zero-key offline assistant)
+        q_clean = user_message.lower().strip()
+        all_deltas = getattr(self.engine, 'deltas', getattr(self.engine, 'delta_log', []))
+        past_deltas = [d for d in all_deltas if getattr(d, 'timestamp', datetime.min) <= playhead_dt]
         
-        if not matched:
-            state_sample = ", ".join([f"{k}: {v}" for k, v in list(res["state"].items())[:4]])
-            response = f"At **{time_str}**, the system state is configured as follows: {state_sample}. Based on our causal timeline, the recent operational progression is:\n\n{res['causal_summary']}"
-        else:
-            facts = "; ".join(matched)
-            response = f"As of **{time_str}**, {facts}.\n\n**Historical Causation & Context:**\n{res['causal_summary']}\n\n*(Temporal Fence: 0% future data leakage)*"
+        # Intent A: "Why" / "Reason" / "Cause" / "Purpose"
+        if any(w in q_clean for w in ["why", "reason", "cause", "purpose", "how come"]):
+            recent_reasons = []
+            for d in past_deltas[-5:]:
+                ent = getattr(d, 'entity_id', 'Item')
+                val = str(getattr(d, 'new_value', ''))
+                reason = getattr(d, 'causal_reason', '')
+                if reason and reason != 'Delta':
+                    recent_reasons.append(f"• **{ent}**: {reason} (Result: {val[:60]})")
+                else:
+                    recent_reasons.append(f"• **{ent}**: Updated to {val[:60]}")
             
-        return response
+            reasons_text = "\n".join(recent_reasons) if recent_reasons else "• Operations proceeded according to the scheduled architecture roadmap."
+            return f"### 💡 Causal Context & Motivations (as of {time_str}):\n\nThe recent changes were initiated for the following reasons:\n\n{reasons_text}\n\n*(🛡️ Strictly fenced at {time_str} with 0% future leakage)*"
+
+        # Intent B: "Who" / "Author" / "Team" / "Lead"
+        if any(w in q_clean for w in ["who", "author", "lead", "team", "person", "contributor"]):
+            authors = set()
+            for d in past_deltas[-10:]:
+                val = str(getattr(d, 'new_value', ''))
+                if ":" in val:
+                    authors.add(val.split(":")[0].strip())
+            authors_list = ", ".join([f"**{a}**" for a in list(authors)[:6]]) if authors else "Core Engineering Team"
+            return f"### 👥 Active Contributors & Personnel (as of {time_str}):\n\nThe active contributors/leads responsible for state modifications up to this point include: {authors_list}."
+
+        # Intent C: General / Specific Entity Question
+        matched_items = []
+        for k, v in res["state"].items():
+            if any(term in k.lower() or term in str(v).lower() for term in q_clean.split() if len(term) > 2):
+                matched_items.append((k, str(v)))
+                
+        if matched_items:
+            bullets = "\n".join([f"• **{k}**: {v[:75]}" for k, v in matched_items[:6]])
+            return f"### 📋 System Status & Active Configuration (as of {time_str}):\n\n{bullets}\n\n**Recent Trajectory:**\n{res['causal_summary']}"
+        else:
+            # Clean overview of the latest 5 state items
+            latest_items = list(res["state"].items())[:5]
+            bullets = "\n".join([f"• **{k}**: {str(v)[:75]}" for k, v in latest_items])
+            return f"### 🌐 System Overview (as of {time_str}):\n\nCurrently, there are **{len(res['state'])} active state entities** tracked in memory:\n\n{bullets}\n\n**Latest Timeline Progression:**\n{res['causal_summary']}"
 
     def ask(self, question: str, playhead: Any = None) -> str:
         """Convenient alias for chat."""
         return self.chat(user_message=question, playhead=playhead)
+
 
 
 # Backward compatibility alias
