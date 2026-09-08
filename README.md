@@ -1,8 +1,8 @@
-﻿# ⏳ TimeMeshin
+# ⏳ TimeMeshin
 
 > **The Deterministic Spatio-Temporal ($S \times T$) Video-Scrubber Context Engine for AI Agents & LLM Retrieval**
 
-[![License: Apache-2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
+[![License: FSL-1.1-Apache](https://img.shields.io/badge/License-FSL--1.1--Apache--2.0-blue.svg)](LICENSE)
 [![Python: 3.9+](https://img.shields.io/badge/Python-3.9%2B-brightgreen.svg)]()
 [![PyPI: timemeshin](https://img.shields.io/badge/PyPI-timemeshin-blue.svg)]()
 [![Antigravity: Skill Enabled](https://img.shields.io/badge/Antigravity-Skill%20%26%20Plugin-orange.svg)]()
@@ -127,4 +127,10 @@ timemeshin/
 ---
 
 ## 📜 License
-Apache 2.0 License. Free for individuals, researchers, and commercial use.
+
+This project is licensed under the **Functional Source License, Version 1.1 (FSL-1.1-Apache-2.0)**:
+
+* **100% Free for Individuals & Developers:** Free for personal use, research, education, and learning.
+* **100% Free for Internal Business / Commercial Use:** Companies can freely build, embed, and deploy TimeMeshin for all internal systems and applications.
+* **Competitive Cloud Protection:** Prevents cloud vendors and third parties from taking the software and reselling it as a competing managed cloud SaaS/PaaS service.
+* **Automatic Open Source Conversion:** Converts automatically into pure **Apache 2.0** open source exactly **2 years** after each release.
