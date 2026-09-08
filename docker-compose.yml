@@ -1,0 +1,17 @@
+version: '3.8'
+
+services:
+  chronomesh-engine:
+    build: .
+    container_name: chronomesh-server
+    ports:
+      - "8000:8000"
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
+    volumes:
+      - chronomesh_data:/app/data
+    restart: unless-stopped
+
+volumes:
+  chronomesh_data:
