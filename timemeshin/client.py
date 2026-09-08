@@ -1,3 +1,4 @@
+import os
 from datetime import datetime
 import json
 from typing import Any, Dict, List, Optional
@@ -122,19 +123,26 @@ class TimeMeshinClient:
         return recorded
 
     def _parse_time(self, t: Any) -> datetime:
+        dt = None
         if isinstance(t, datetime):
-            return t
-        if isinstance(t, str):
+            dt = t
+        elif isinstance(t, str):
             for fmt in ("%Y-%m-%d %H:%M:%S", "%Y-%m-%d %H:%M", "%Y-%m-%dT%H:%M:%S", "%Y-%m-%d"):
                 try:
-                    return datetime.strptime(t, fmt)
+                    dt = datetime.strptime(t, fmt)
+                    break
                 except ValueError:
                     pass
-            try:
-                return datetime.fromisoformat(t.replace("Z", "+00:00"))
-            except ValueError:
-                pass
-        return datetime.utcnow()
+            if dt is None:
+                try:
+                    dt = datetime.fromisoformat(t.replace("Z", "+00:00"))
+                except ValueError:
+                    pass
+        if dt is None:
+            dt = datetime.utcnow()
+        if dt.tzinfo is not None:
+            dt = dt.replace(tzinfo=None)
+        return dt
 
     def scrub(self, playhead: Any, filter_rack: Optional[str] = None) -> Dict[str, Dict[str, Any]]:
         """

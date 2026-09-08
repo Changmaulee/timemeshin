@@ -56,7 +56,7 @@ def ingest_text(req: IngestRequest):
     t = None
     if req.timestamp:
         try:
-            t = datetime.fromisoformat(req.timestamp.replace("Z", "+00:00"))
+            t = datetime.fromisoformat(req.timestamp.replace("Z", "+00:00")).replace(tzinfo=None)
         except ValueError:
             raise HTTPException(status_code=400, detail="Invalid ISO timestamp format.")
     
@@ -74,7 +74,7 @@ def scrub_playhead(
     rack: Optional[str] = Query(None, description="Optional topic rack filter")
 ):
     try:
-        t = datetime.fromisoformat(playhead_time.replace("Z", "+00:00"))
+        t = datetime.fromisoformat(playhead_time.replace("Z", "+00:00")).replace(tzinfo=None)
     except ValueError:
         raise HTTPException(status_code=400, detail="Invalid ISO timestamp format.")
 
@@ -88,7 +88,7 @@ def scrub_playhead(
 @app.post("/api/v1/query")
 def dual_coordinate_query(req: QueryRequest):
     try:
-        t = datetime.fromisoformat(req.playhead_time.replace("Z", "+00:00"))
+        t = datetime.fromisoformat(req.playhead_time.replace("Z", "+00:00")).replace(tzinfo=None)
     except ValueError:
         raise HTTPException(status_code=400, detail="Invalid ISO timestamp format.")
 
@@ -109,7 +109,7 @@ def trace_entity_trajectory(
     t = None
     if up_to_time:
         try:
-            t = datetime.fromisoformat(up_to_time.replace("Z", "+00:00"))
+            t = datetime.fromisoformat(up_to_time.replace("Z", "+00:00")).replace(tzinfo=None)
         except ValueError:
             raise HTTPException(status_code=400, detail="Invalid ISO timestamp format.")
 
