@@ -13,12 +13,12 @@ class DeltaFrame:
         self,
         timestamp: datetime,
         entity_id: str,
-        topic_rack: str,
-        attribute: str,
-        old_value: Any,
-        new_value: Any,
-        causal_reason: str,
-        raw_text: str,
+        topic_rack: str = "General",
+        attribute: str = "state",
+        old_value: Any = None,
+        new_value: Any = None,
+        causal_reason: str = "",
+        raw_text: str = "",
         embedding: Optional[np.ndarray] = None
     ):
         self.timestamp = timestamp
@@ -28,8 +28,9 @@ class DeltaFrame:
         self.old_value = old_value
         self.new_value = new_value
         self.causal_reason = causal_reason
-        self.raw_text = raw_text
+        self.raw_text = raw_text or f"[{topic_rack}] {entity_id} = {new_value}"
         self.embedding = embedding
+
 
     def to_dict(self) -> Dict[str, Any]:
         return {

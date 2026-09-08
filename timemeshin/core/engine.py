@@ -22,12 +22,25 @@ class ChronoMeshEngine:
         self.racks: set = set()
         self.entities: set = set()
 
+    @property
+    def delta_log(self) -> List[DeltaFrame]:
+        """Provides access to chronological stream of recorded deltas."""
+        return self.deltas
+
+    def get_deltas_up_to(self, timestamp: datetime, filter_rack: Optional[str] = None) -> List[DeltaFrame]:
+        """Returns all deltas occurring on or before timestamp."""
+        return [
+            d for d in self.deltas
+            if d.timestamp <= timestamp and (filter_rack is None or d.topic_rack == filter_rack)
+        ]
+
     def record_delta(self, delta: DeltaFrame) -> None:
         """Appends a state mutation (P-Frame) to the chronological stream."""
         self.deltas.append(delta)
         self.racks.add(delta.topic_rack)
         self.entities.add(delta.entity_id)
         self.deltas.sort(key=lambda d: d.timestamp)
+
 
     def create_keyframe(self, timestamp: datetime) -> Keyframe:
         """Compacts all state up to timestamp into a consolidated I-Frame."""
