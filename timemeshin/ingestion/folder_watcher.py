@@ -34,12 +34,14 @@ NOISE_PATTERNS = [
 ]
 
 DEFAULT_TOPIC_KEYWORDS = {
+    "Multi-Agent SCM Architecture": ["scm", "capsule", "polyhedral", "multi-agent", "fractal", "triaxial", "orthogonal", "corona", "dodecahedral", "topological", "manifold"],
+    "GPU & CUDA Benchmarks": ["cuda", "gpu", "tesla t4", "benchmark", "latency", "throughput", "kaggle", "colab", "timing", "ops/sec", "speedup"],
+    "Mathematical Formulations": ["proof", "theorem", "lemma", "equation", "formula", "simplex", "tetrahedron", "barycentric", "invariance", "golden-ratio", "freudenthal"],
+    "Research Paper & Publications": ["paper", "latex", "ieee", "overleaf", "zenodo", "doi", "publication", "draft", "peer-review", "reviewer"],
     "Database & Storage": ["database", "postgres", "dynamodb", "redis", "mongodb", "mysql", "sqlite", "table", "schema", "query", "migration"],
     "Auth & Security": ["auth", "oauth", "jwt", "token", "login", "sso", "permission", "rbac", "password", "security", "encryption"],
-    "Architecture & Core": ["architecture", "refactor", "service", "microservice", "api", "pipeline", "engine", "protocol", "codec", "design"],
-    "Infrastructure & Cloud": ["cloud", "aws", "docker", "kubernetes", "deploy", "server", "cluster", "latency", "hosting", "container"],
-    "Budget & Operations": ["budget", "cost", "dollar", "$", "usd", "spend", "hiring", "team", "assign", "contract", "billing"],
-    "UI & Frontend": ["ui", "frontend", "dashboard", "css", "html", "react", "vue", "tailwind", "button", "slider", "widget", "theme"]
+    "Budget & Operations": ["budget", "cost", "dollar", "$", "usd", "spend", "hiring", "team", "billing"],
+    "UI & Frontend": ["ui", "frontend", "dashboard", "css", "html", "react", "theme", "light mode", "clean mode"]
 }
 
 
@@ -268,7 +270,8 @@ class FolderWatcher:
             if ts_str not in timestamps:
                 timestamps.append(ts_str)
 
-            topic = d.topic_rack
+            # Classify dynamically into tailored topic swimlanes
+            topic = self.classify_topic_rack(d.raw_text or d.causal_reason, d.entity_id)
             if topic not in topics:
                 topics.append(topic)
 

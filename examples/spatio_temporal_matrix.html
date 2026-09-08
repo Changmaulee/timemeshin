@@ -128,6 +128,7 @@
     };
 
     let currentPlayheadIdx = 7;
+    let liveTimeline = ["Genesis (T0)", "2026-09-01", "2026-09-03", "2026-09-04", "2026-09-06", "2026-09-07", "2026-09-08 15:00", "2026-09-08 17:00"];
 
     function renderMatrix() {
       const container = document.getElementById("swimlanes-container");
@@ -223,8 +224,8 @@
 
     function onScrub(val) {
       currentPlayheadIdx = parseInt(val);
-      const timestamps = ["Genesis (T0)", "2026-09-01", "2026-09-03", "2026-09-04", "2026-09-06", "2026-09-07", "2026-09-08 15:00", "2026-09-08 17:00"];
-      document.getElementById("playhead-label").innerText = timestamps[Math.min(currentPlayheadIdx, timestamps.length - 1)];
+      const label = (liveTimeline && liveTimeline.length > 0) ? (liveTimeline[Math.min(currentPlayheadIdx - 1, liveTimeline.length - 1)] || "Latest") : "Latest";
+      document.getElementById("playhead-label").innerText = label;
       renderMatrix();
     }
 
@@ -247,6 +248,7 @@
       }
 
       if (data && data.events && data.events.length > 0) {
+        liveTimeline = data.timeline || liveTimeline;
         SAMPLE_MATRIX.topics = data.topics && data.topics.length ? data.topics : SAMPLE_MATRIX.topics;
         SAMPLE_MATRIX.events = data.events.map((e, idx) => ({
           id: e.id || `e_${idx}`,
