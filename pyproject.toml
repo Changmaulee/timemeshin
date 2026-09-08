@@ -20,6 +20,11 @@ dependencies = [
     "tqdm>=4.65.0"
 ]
 
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["timemeshin*"]
+exclude = ["paper*", "benchmarks*", "examples*", "tests*"]
+
 [project.optional-dependencies]
 embeddings = [
     "sentence-transformers>=2.2.0"
@@ -40,3 +45,4 @@ all = [
     "uvicorn>=0.20.0",
     "pypdf>=3.0.0"
 ]
+
