@@ -87,6 +87,9 @@
             cursor: pointer;
             transition: all 0.15s ease;
             color: var(--text-body);
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
         }
 
         .btn:hover { background: #F1F5F9; border-color: #CBD5E1; }
@@ -96,7 +99,7 @@
         /* 3-COLUMN WORKFLOW GRID */
         .workflow-grid {
             display: grid;
-            grid-template-columns: 360px 1fr;
+            grid-template-columns: 380px 1fr;
             gap: 24px;
             margin-bottom: 24px;
         }
@@ -127,19 +130,53 @@
             color: var(--text-heading);
         }
 
+        /* DRAG AND DROP UPLOAD ZONE */
+        .upload-dropzone {
+            border: 2px dashed #93C5FD;
+            background: #F0F7FF;
+            border-radius: 12px;
+            padding: 16px;
+            text-align: center;
+            margin-bottom: 14px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .upload-dropzone:hover, .upload-dropzone.dragover {
+            background: #DBEAFE;
+            border-color: var(--accent-blue);
+        }
+
+        .upload-icon {
+            font-size: 24px;
+            margin-bottom: 4px;
+        }
+
+        .upload-text {
+            font-size: 12.5px;
+            font-weight: 600;
+            color: var(--accent-blue);
+        }
+
+        .upload-sub {
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-top: 2px;
+        }
+
         /* INGEST PANEL */
         textarea {
             width: 100%;
-            height: 140px;
+            height: 100px;
             border: 1px solid var(--border);
             border-radius: 10px;
-            padding: 12px;
+            padding: 10px 12px;
             font-family: 'JetBrains Mono', monospace;
-            font-size: 12.5px;
+            font-size: 12px;
             color: var(--text-body);
             background: #F8FAFC;
             resize: none;
-            margin-bottom: 12px;
+            margin-bottom: 10px;
             outline: none;
         }
 
@@ -147,7 +184,7 @@
 
         .delta-stream {
             flex-grow: 1;
-            height: 280px;
+            height: 220px;
             overflow-y: auto;
             border: 1px solid var(--border);
             border-radius: 10px;
@@ -187,7 +224,7 @@
 
         .playhead-display {
             font-family: 'JetBrains Mono', monospace;
-            font-size: 16px;
+            font-size: 15px;
             font-weight: 700;
             color: var(--accent-blue);
             background: #EFF6FF;
@@ -331,8 +368,8 @@
             <span class="badge">Visual Context Engine</span>
         </div>
         <div class="quick-actions">
-            <button class="btn" onclick="loadSampleScenario()">📥 Load 30-Day Enterprise Scenario</button>
-            <button class="btn btn-primary" onclick="window.open('../TIMEMESHIN_EXECUTIVE_SUMMARY.html')">📄 View 1-Pager Brief</button>
+            <button class="btn" onclick="loadSampleScenario()">📥 Load 30-Day Scenario</button>
+            <button class="btn btn-primary" onclick="window.open('../TIMEMESHIN_EXECUTIVE_SUMMARY.html')">📄 1-Pager Brief</button>
         </div>
     </div>
 
@@ -340,12 +377,24 @@
     <div class="workflow-grid">
         <!-- 1. INGEST PANEL -->
         <div class="panel">
-            <div class="panel-title">📥 1. Ingest Stream (Write-Ahead Log)</div>
-            <textarea id="rawInput" placeholder="Type or paste real-time event logs, e.g.:
-[2026-09-02 14:00] Migrated database to DynamoDB due to write lock contention. New budget is $5000."></textarea>
-            <button class="btn btn-primary" style="margin-bottom: 14px;" onclick="ingestCustomText()">⚡ Ingest Event Delta</button>
+            <div class="panel-title">📥 1. Ingest & Upload Stream</div>
             
-            <div style="font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 6px;">Active P-Frame Stream</div>
+            <!-- DRAG & DROP FILE UPLOAD BOX -->
+            <div class="upload-dropzone" id="dropzone" onclick="document.getElementById('fileInput').click()">
+                <div class="upload-icon">📁</div>
+                <div class="upload-text">Click or Drag & Drop File to Ingest</div>
+                <div class="upload-sub">Supports .txt, .json, .jsonl, .log, .csv transcripts</div>
+                <input type="file" id="fileInput" style="display: none;" accept=".txt,.json,.jsonl,.log,.csv" onchange="handleFileUpload(event)">
+            </div>
+
+            <!-- MANUAL TEXT INPUT -->
+            <textarea id="rawInput" placeholder="Or type/paste real-time event logs here..."></textarea>
+            <button class="btn btn-primary" style="margin-bottom: 14px;" onclick="ingestCustomText()">⚡ Ingest Text Delta</button>
+            
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                <span style="font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Active P-Frame Stream</span>
+                <span style="font-size: 11px; color: var(--accent-blue); font-weight: 600;" id="streamCount">5 Events</span>
+            </div>
             <div class="delta-stream" id="deltaStream">
                 <!-- Stream items inserted by JS -->
             </div>
@@ -357,16 +406,16 @@
             <div class="panel-title">🎬 2. Digest & Playhead Scrubber (Time Travel)</div>
             <div class="scrubber-box">
                 <div class="scrubber-header">
-                    <span style="font-size: 13px; font-weight: 600; color: var(--text-heading);">Playhead Timestamp:</span>
+                    <span style="font-size: 13px; font-weight: 600; color: var(--text-heading);">Playhead Position:</span>
                     <span class="playhead-display" id="playheadLabel">Day 2 (14:00)</span>
                 </div>
                 <input type="range" id="timeSlider" min="0" max="4" step="1" value="1" oninput="onScrub(this.value)">
-                <div class="timeline-ticks">
-                    <span>Day 1 (09:00)</span>
-                    <span>Day 2 (14:00)</span>
-                    <span>Day 3 (09:00)</span>
-                    <span>Day 4 (16:00)</span>
-                    <span>Day 5 (12:00)</span>
+                <div class="timeline-ticks" id="timelineTicks">
+                    <span>Day 1</span>
+                    <span>Day 2</span>
+                    <span>Day 3</span>
+                    <span>Day 4</span>
+                    <span>Day 5</span>
                 </div>
             </div>
 
@@ -429,8 +478,7 @@
 </div>
 
 <script>
-// Mock Dataset for Interactive Demonstration
-const TIMELINE_STATIONS = [
+let TIMELINE_STATIONS = [
     {
         day: "Day 1 (09:00)",
         state: [
@@ -506,10 +554,11 @@ function renderStream() {
         div.innerHTML = `<div class="stream-time">⏱️ ${e.time}</div><div class="stream-change">${e.text}</div>`;
         container.appendChild(div);
     });
+    document.getElementById("streamCount").innerText = `${streamEvents.length} Events`;
 }
 
 function onScrub(index) {
-    const station = TIMELINE_STATIONS[index];
+    const station = TIMELINE_STATIONS[index] || TIMELINE_STATIONS[0];
     document.getElementById("playheadLabel").innerText = station.day;
     
     // Render State Matrix Table
@@ -541,6 +590,57 @@ function ingestCustomText() {
     document.getElementById("rawInput").value = "";
     alert("✅ Event Delta Ingested & Spliced into Timeline!");
 }
+
+// -----------------------------------------------------------------------------
+// FILE UPLOAD HANDLER (DRAG & DROP OR FILE PICKER)
+// -----------------------------------------------------------------------------
+function handleFileUpload(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const content = e.target.result;
+        processUploadedContent(file.name, content);
+    };
+    reader.readAsText(file);
+}
+
+function processUploadedContent(filename, content) {
+    let lines = content.split("\n").filter(l => l.trim().length > 0);
+    alert(`📥 Uploaded '${filename}' with ${lines.length} entries! Processing deltas into TimeMeshin...`);
+
+    // Ingest first 15 lines as deltas
+    lines.slice(0, 15).forEach((line, idx) => {
+        let cleanText = line.substring(0, 120);
+        let simulatedTime = `2026-09-0${Math.min(idx + 1, 9)} 10:${(idx * 4) % 60 < 10 ? '0' : ''}${(idx * 4) % 60}`;
+        streamEvents.unshift({
+            time: simulatedTime,
+            text: cleanText
+        });
+    });
+
+    renderStream();
+    alert("✅ Timeline Mesh Updated with Uploaded Data!");
+}
+
+// Drag & Drop event bindings
+const dropzone = document.getElementById("dropzone");
+['dragenter', 'dragover'].forEach(name => {
+    dropzone.addEventListener(name, (e) => { e.preventDefault(); dropzone.classList.add('dragover'); });
+});
+['dragleave', 'drop'].forEach(name => {
+    dropzone.addEventListener(name, (e) => { e.preventDefault(); dropzone.classList.remove('dragover'); });
+});
+dropzone.addEventListener('drop', (e) => {
+    const dt = e.dataTransfer;
+    const file = dt.files[0];
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = (ev) => processUploadedContent(file.name, ev.target.result);
+        reader.readAsText(file);
+    }
+});
 
 function loadSampleScenario() {
     alert("✅ Loaded 30-Day Multi-DB Enterprise Scenario into Timeline!");
