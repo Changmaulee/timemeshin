@@ -624,7 +624,10 @@ function onScrub(index) {
     document.getElementById("causalChainBox").innerHTML = `<div style="font-weight: 700; color: var(--text-heading); margin-bottom: 6px;">🔗 Transitive Causal Chain:</div><div class="chain-step">${station.causal}</div>`;
 }
 
-function extractEntityFromLine(line) {
+function extractEntityFromLine(rawLine) {
+    // Strip leading document tags like [doc.html]
+    let line = rawLine.replace(/^\[.*?\]\s*/, '').trim();
+
     // 1. Arrow notation: "Entity ➔ Value | Context"
     if (line.includes("➔")) {
         const parts = line.split("➔");
@@ -638,47 +641,66 @@ function extractEntityFromLine(line) {
     // 2. Colon notation: "Key: Value"
     if (line.includes(":") && !line.startsWith("http")) {
         const parts = line.split(":");
-        const entity = parts[0].replace(/^[\[\(#\*\-\s]+/, '').trim();
-        const val = parts.slice(1).join(":").trim();
+        const entity = parts[0].replace(/^[\[\(#\*\-\s|]+/, '').trim();
+        const val = parts.slice(1).join(":").replace(/[|]+/g, '').trim();
         if (entity.length > 1 && entity.length < 30 && val.length > 0) {
             return { entity: entity, val: val.substring(0, 40), rack: "Document" };
         }
     }
 
-    // 3. Fallback: Clean sentence summary
-    const words = line.split(" ").filter(w => w.length > 2);
-    const entity = words.slice(0, 2).join(" ") || "Section";
-    const val = line.substring(0, 36);
-    return { entity: entity, val: val, rack: "Overview" };
+    // 3. Table / Column / Pipe Box notation: e.g. "| Bypass Tube (Add) | (Horizontal) |"
+    if (line.includes("|")) {
+        const segments = line.split("|").map(s => s.replace(/[▲▼■•_\-+~]/g, '').trim()).filter(s => s.length > 2);
+        if (segments.length > 0) {
+            const entity = segments[0].substring(0, 24);
+            const val = segments.length > 1 ? segments.slice(1).join(" - ").substring(0, 36) : "Configured";
+            return { entity: entity, val: val, rack: "Component" };
+        }
+    }
+
+    // 4. Fallback: Clean sentence / words
+    const cleanWords = line.replace(/[|▲▼■•_\-+~#*`]/g, ' ').split(/\s+/).filter(w => w.length > 2);
+    const entity = cleanWords.slice(0, 3).join(" ") || "Item";
+    const val = cleanWords.slice(3).join(" ") || "Active";
+    return { entity: entity.substring(0, 24), val: val.substring(0, 36), rack: "Overview" };
 }
 
 function reconstructTimelineFromStream() {
     if (streamEvents.length === 0) return;
 
+    // Filter out purely decorative / empty stream events
+    const validEvents = streamEvents.filter(ev => {
+        const raw = ev.text.replace(/^\[.*?\]\s*/, '').trim();
+        return !/^[\s|_\-+=\/\\▲▼~]+$/.test(raw) && raw.length >= 3;
+    });
+
+    const eventsToProcess = validEvents.length > 0 ? validEvents : streamEvents;
+
     // Sort chronologically (oldest to newest for timeline playhead)
-    const chronological = [...streamEvents].reverse();
+    const chronological = [...eventsToProcess].reverse();
     const newStations = [];
     const cumulativeState = {};
 
     chronological.forEach((ev, idx) => {
         const parsed = extractEntityFromLine(ev.text);
-        cumulativeState[parsed.entity] = {
-            entity: parsed.entity,
-            rack: parsed.rack,
-            val: parsed.val,
-            modality: "COMMITTED"
-        };
+        if (parsed.entity) {
+            cumulativeState[parsed.entity] = {
+                entity: parsed.entity,
+                rack: parsed.rack,
+                val: parsed.val,
+                modality: "COMMITTED"
+            };
+        }
 
         const stateList = Object.values(cumulativeState);
-        const tmSummary = stateList.slice(0, 4).map(s => `• <b>${s.entity}:</b> ${s.val}`).join("<br>");
+        const tmSummary = stateList.slice(0, 5).map(s => `• <b>${s.entity}:</b> ${s.val}`).join("<br>");
         
-        // Simulate Vector RAG hallucination by pulling future/conflicting entities if available
         let ragSummary = "";
         if (idx < chronological.length - 1) {
-            const futureItem = chronological[chronological.length - 1].text.substring(0, 60);
-            ragSummary = `⚠️ Hallucination / Leakage: Mixes current step with future data "${futureItem}" simultaneously without temporal fencing.`;
+            const futureItem = chronological[chronological.length - 1].text.replace(/^\[.*?\]\s*/, '').substring(0, 50);
+            ragSummary = `⚠️ Temporal Collision / Leakage: Conflates Step ${idx+1} with unreached future item "${futureItem}".`;
         } else {
-            ragSummary = `Retrieved all chunks without temporal fence: "${stateList.map(s => s.val).join(', ')}"`;
+            ragSummary = `Retrieved all chunks without temporal fencing: "${stateList.map(s => s.entity).join(', ')}"`;
         }
 
         let causalTrail = "";
@@ -760,7 +782,7 @@ function processUploadedContent(filename, content) {
                 const rawText = doc.body ? (doc.body.innerText || doc.body.textContent || "") : "";
                 cleanLines = rawText.split('\n')
                     .map(t => t.trim().replace(/\s+/g, ' '))
-                    .filter(t => t.length >= 8);
+                    .filter(t => t.length >= 3 && !/^[\s|_\-+=\/\\▲▼~]+$/.test(t));
             } catch (domErr) {
                 console.warn("DOMParser fallback triggered:", domErr);
             }
@@ -776,12 +798,12 @@ function processUploadedContent(filename, content) {
                 stripped = tempDiv.textContent || tempDiv.innerText || stripped;
                 cleanLines = stripped.split('\n')
                     .map(t => t.trim().replace(/\s+/g, ' '))
-                    .filter(t => t.length >= 8);
+                    .filter(t => t.length >= 3 && !/^[\s|_\-+=\/\\▲▼~]+$/.test(t));
             }
         } else if (ext === 'md') {
             cleanLines = content.split('\n')
                 .map(l => l.replace(/[#*_`>\[\]\(\)]/g, '').trim())
-                .filter(l => l.length >= 5);
+                .filter(l => l.length >= 4 && !/^[\s|_\-+=\/\\▲▼~]+$/.test(l));
         } else if (ext === 'json' || ext === 'jsonl') {
             try {
                 const data = JSON.parse(content);
@@ -796,7 +818,7 @@ function processUploadedContent(filename, content) {
         } else {
             cleanLines = content.split('\n')
                 .map(l => l.replace(/[^\x20-\x7E\t]/g, '').trim())
-                .filter(l => l.length >= 5);
+                .filter(l => l.length >= 4 && !/^[\s|_\-+=\/\\▲▼~]+$/.test(l));
         }
     } catch (err) {
         console.error("Ingestion parsing error:", err);
@@ -807,7 +829,10 @@ function processUploadedContent(filename, content) {
         cleanLines = ["Document ingested successfully."];
     }
 
-    // Clear current stream to load the document's sequence fresh
+    // Set query prompt to reflect the ingested document
+    document.getElementById("queryInput").value = `What is the active configuration / state in ${filename}?`;
+
+    // Populate streamEvents
     streamEvents = [];
     const sectionCount = Math.min(cleanLines.length, 12);
 
