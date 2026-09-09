@@ -1,130 +1,178 @@
-# TimeMeshin (v0.2.1)
-> **Deterministic Spatio-Temporal ($S \times T$) Context Engine & Episodic Memory Substrate for AI Agents**  
-> *Authored by Chandramouli ([@Changmaulee](https://github.com/Changmaulee))*
+TimeMeshin (v0.2.1)
+Deterministic Spatio-Temporal (
+S
+×
+T
+S×T) Context Engine & Episodic Memory Substrate for AI Agents
+Authored by Chandramouli (@Changmaulee) • Contact: 
+yellowbridgeconnections@gmail.com
 
-[![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
-[![Python Version](https://img.shields.io/badge/python-3.8%2B-brightgreen.svg)](https://python.org)
-[![Tests](https://img.shields.io/badge/tests-passing-success.svg)](https://github.com/Changmaulee/timemeshin)
+LicensePython VersionTests 
+Architecture
 
----
+🚀 Overview
+TimeMeshin is a spatio-temporal episodic memory engine engineered specifically to solve temporal blindness, state drift, conflicting context clutter, and causal opacity in long-horizon AI agent loops and stateful RAG systems.
 
-## 🚀 Overview
+Standard Vector DBs and agent memory frameworks perform flat semantic search. When an agent queries past states, flat similarity frequently retrieves post-hoc data from future steps, causing future-data contamination, dirty rollbacks, and hallucinated memory states.
 
-**TimeMeshin** is a spatio-temporal episodic memory engine engineered specifically to solve the temporal blindness, conflicting context clutter, and causal opacity of standard Vector RAG.
+TimeMeshin treats agent context like a video stream:
 
-By unifying a **Hard Temporal Fence ($T$)** with **Dense Semantic Vector Ranking ($S$)**, **Topological Causal Discovery**, and **Optimistic Concurrency Control (OCC) on B-Frames**, TimeMeshin provides 100% deterministic, point-in-time ground truth for AI agents without future-data contamination or dirty state commits.
+I-Frames (Keyframes): Consolidated point-in-time ground truth states.
+P-Frames (Deltas): Causal state mutations and diffs leading up to the playhead.
+B-Frames (Ephemeral Sandboxes): In-memory speculative execution branches guarded by Optimistic Concurrency Control (OCC).
+Temporal Playhead Scrubber: Mathematically bounds candidate retrieval to 
+t
+≤
+t
+playhead
+t≤t 
+playhead
+​
+  with 0% future-data leakage guaranteed.
+⚡ Quickstart (5 Lines of Code)
+Installation
+bash
 
----
+pip install timemeshin
+Basic Usage
+python
 
-## 🏛️ Core Architectural Upgrades
-
-```
-                                [INCOMING RAW LOG STREAM]
-                                            │
-               ┌────────────────────────────┴────────────────────────────┐
-               ▼                                                         ▼
-       [1. FAST PATH (<2ms)]                                [2. ASYNC REFINEMENT WORKER]
-  Write-Ahead Append: SQLite Event Table                 SLM Grammar Extractor & Structuring
-               │                                                         │
-               └────────────────────────────┬────────────────────────────┘
-                                            │
-                             [3. TOPOLOGICAL CAUSAL SCOPING]
-                             ├── Entity Dependency Graph (e.g. auth_service -> auth_db)
-                             └── Calibrated NLI Score: P(Entailment) - P(Contradiction) >= 0.85
-                                            │
-                             [4. B-FRAME OCC EPOCH TRACKER]
-                             ├── Base Epoch Hash at t_branch
-                             └── Conflict Detection on commit_to_main()
-```
-
-### 1. Two-Speed Ingestion & Zero-ETL Delta Extractor (`extractor.py`, `client.py`)
-* **Fast-Path Sync (`<2ms`):** Appends raw unparsed engineering prose directly to SQLite Write-Ahead Log as a `SemanticEvent`.
-* **Refinement Worker:** Extracts structured state deltas ($\Delta = \langle t, e, r, a, v_{\text{old}}, v_{\text{new}}, c_i, \text{modality} \rangle$) and compacts Keyframes without blocking write throughput.
-
-### 2. $S \times T$ Hybrid Bihalo Index & Scrubber (`engine.py`, `storage.py`)
-* **Coordinate $T$ (Temporal Fence):** Strictly masks $t > t_{\text{playhead}}$ to guarantee **0% future-data leakage**.
-* **Keyframe State Consolidation ($I$-Frames):** Collapses historical $P$-Frames into a single, unambiguous active entity state table.
-* **Coordinate $S$ (Semantic Ranking):** Ranks historical causal rationales and state transitions using dense cosine similarity.
-
-### 3. Self-Wiring Causal DAG with Topological Scoping (`causality.py`)
-* **Spurious Correlation Rejection:** Enforces runtime architectural topology boundaries (`auth_service` $\to$ `database` $\to$ `api_gateway`). Unrelated noisy commits (e.g. frontend CSS changes) are scoped out before computing embeddings.
-* **Calibrated Directional NLI:** Computes $\text{Confidence}(A \to B) = P(\text{Entailment}) - P(\text{Contradiction})$ with configurable gating.
-* **Multi-Hop Traversal:** Traverses dependency graphs backwards to output chronological root-cause chains directly into LLM prompts.
-
-### 4. $B$-Frame Ephemeral Branching with OCC (`branching.py`)
-* **Sandboxed Counterfactuals:** In-memory Copy-on-Write (CoW) sandbox ($S_{\text{branch}}(t) = S(t) \oplus \Delta_{\text{hypothetical}}$) for agents to test rollbacks, migrations, and multi-step plans.
-* **Ghost Rebase Prevention (OCC):** Tracks SHA-256 vector clock epochs on the base timeline. If the underlying timeline receives out-of-order mutations during a simulation, `commit_to_main()` detects timeline drift and raises `BranchConflictError`.
-
----
-
-## 📦 Quickstart Python Usage
-
-```python
 from timemeshin import TimeMeshinClient
-
-# 1. Initialize persistent SQLite substrate
+# 1. Initialize persistent memory substrate (100% local-first SQLite)
 client = TimeMeshinClient(db_path="timemeshin_memory.db")
-
-# 2. Ingest raw unstructured text (Fast-Path or Synchronous)
-client.ingest("Initial setup: primary database set to Postgres (max_connections=100).", timestamp="2026-09-08 09:00:00")
+# 2. Ingest unformatted engineering logs, PRs, or agent tool outputs
 client.ingest("Switched primary database from Postgres to DynamoDB due to write lock contention.", timestamp="2026-09-08 11:30:00")
-client.ingest("PR #402 merged (auth_service updated to v2.0 with aggressive connection pooling).", timestamp="2026-09-08 14:42:00")
 client.ingest("Reduced database max_connections 100 -> 20 to preserve cloud resources.", timestamp="2026-09-08 14:50:00")
-client.ingest("HTTP 504 Gateway Timeouts detected on API gateway due to pool exhaustion.", timestamp="2026-09-08 15:00:00")
-
-# 3. Deterministic Point-in-Time Scrubbing (t = 12:00 Noon)
-kf = client.scrub(playhead="2026-09-08 12:00:00")
-print(kf.get_entity_state("database"))
-# Returns: {'engine': 'DynamoDB', 'max_connections': '100', '_last_updated': '2026-09-08 11:30:00'}
-
-# 4. S x T Dual-Coordinate Query with Compiled Prompt
-result = client.query("What was our database engine and configuration?", playhead="2026-09-08 12:00:00")
-print(result["compiled_prompt_context"])
-
-# 5. Multi-Hop Causal Root-Cause Trace
-causal_narrative = client.trace_prompt("HTTP 504 Outage", target_id_or_entity="api_gateway", playhead="2026-09-08 15:05:00")
-print(causal_narrative)
-
-# 6. B-Frame Speculative Counterfactual Simulation (Guarded by OCC)
-with client.branch(from_playhead="2026-09-08 15:00:00", name="sim_rollback") as sim:
+# 3. Deterministic Point-in-Time Scrubbing (I-Frame Keyframe Consolidation)
+state = client.scrub(playhead="2026-09-08 12:00:00")
+# Active state at 12:00: database.engine='DynamoDB', database.max_connections='100'
+# 4. Multi-Hop Causal Root-Cause Trace
+prompt = client.trace_prompt("HTTP 504 Outage", target_id_or_entity="database")
+# 5. Ephemeral B-Frame Sandbox (Simulate rollbacks with OCC without dirtying main memory)
+with client.branch(from_playhead="2026-09-08 15:00:00", name="test_rollback") as sim:
     sim.ingest_hypothetical(
         entity="database",
         attribute="max_connections",
         v_new="100",
-        v_old="20",
-        causal_rationale="Simulated hotfix: restore connection pool"
+        causal_rationale="Simulated rollback of connection limit"
     )
     assert sim.scrub().get_entity_state("database")["max_connections"] == "100"
-    # Auto-discarded upon context exit! Master timeline remains untouched.
-```
+    # Auto-discarded upon exit with 0 disk pollution!
+🏛️ Core Architecture
 
----
+                                [INCOMING RAW LOG / AGENT STREAM]
+                                                │
+                ┌───────────────────────────────┴───────────────────────────────┐
+                ▼                                                               ▼
+        [1. FAST PATH (<2ms)]                                       [2. ASYNC REFINEMENT WORKER]
+   Write-Ahead Append: SQLite Event Table                        SLM Grammar Extractor & Structuring
+                │                                                               │
+                └───────────────────────────────┬───────────────────────────────┘
+                                                │
+                                [3. TOPOLOGICAL CAUSAL SCOPING]
+                                ├── Entity Dependency Graph (e.g. auth_service -> auth_db)
+                                └── Calibrated NLI Score: P(Entailment) - P(Contradiction) >= 0.85
+                                                │
+                                [4. B-FRAME OCC EPOCH TRACKER]
+                                ├── Base Epoch Hash at t_branch
+                                └── Conflict Detection on commit_to_main()
+1. Two-Speed Ingestion & Zero-ETL Delta Extractor
+Fast-Path Sync (<2ms): Appends raw unparsed prose directly to SQLite Write-Ahead Log as a SemanticEvent.
+Refinement Worker: Extracts structured state deltas (
+Δ
+=
+⟨
+t
+,
+e
+,
+r
+,
+a
+,
+v
+old
+,
+v
+new
+,
+c
+i
+,
+modality
+⟩
+Δ=⟨t,e,r,a,v 
+old
+​
+ ,v 
+new
+​
+ ,c 
+i
+​
+ ,modality⟩) and compacts Keyframes without blocking write throughput.
+2. 
+S
+×
+T
+S×T Hybrid Bihalo Index & Scrubber
+Coordinate 
+T
+T (Temporal Fence): Strictly masks 
+t
+>
+t
+playhead
+t>t 
+playhead
+​
+  to guarantee 0% future-data leakage.
+Keyframe State Consolidation (
+I
+I-Frames): Collapses historical 
+P
+P-Frames into a single, unambiguous active entity state table.
+Coordinate 
+S
+S (Semantic Ranking): Ranks historical causal rationales and state transitions using dense cosine similarity.
+📊 Comparison: TimeMeshin vs. Traditional Memory
+Feature	Standard Vector DBs (Pinecone/Chroma)	Traditional Agent Memory (Mem0 / Zep)	TimeMeshin (v0.2.1)
+Temporal Bounding (
+t
+≤
+t
+playhead
+t≤t 
+playhead
+​
+ )	❌ None (Semantic only)	❌ Approximate / recency bias	✅ 100% Deterministic Fence
+Future-Data Leakage Prevention	❌ Leaks future chunks	❌ No point-in-time isolation	✅ Guaranteed 0% Leakage
+Point-in-Time Keyframe Scrubbing	❌ None	❌ None	✅ I-Frame / P-Frame Deltas
+Hypothetical Sandbox Branching	❌ Pollutes database	❌ Pollutes user memory	✅ B-Frames with OCC
+Causal Root Cause Discovery	❌ Unstructured snippets	❌ Flat associations	✅ Topological Causal DAG
+Deployment Model	Cloud-dependent	Cloud or self-hosted	✅ 100% Local-First (SQLite/DuckDB)
+🛠️ Modality Lifecycle
+TimeMeshin supports explicit state verification modes:
 
-## 📊 Live Benchmark Comparison
+COMMITTED: Ground truth verified state changes.
+EVALUATING: Trial modifications undergoing test validation.
+PROPOSED: Speculative changes suggested by planner agents.
+HYPOTHETICAL: Sandbox simulations in temporary B-Frames.
+💼 Enterprise & Production Integration Sprints
+Building an autonomous coding agent, DevOps copilot, or stateful RAG pipeline? We offer 2-Week Guided Integration Sprints to:
 
-To run the live 5-suite benchmark:
-```bash
-python benchmark.py
-```
+Audit your agent memory pipeline and eliminate state drift.
+Implement custom Zero-ETL ingestion and 
+S
+×
+T
+S×T dual-coordinate retrieval.
+Setup B-Frame sandboxes with Optimistic Concurrency Control.
+📩 Get in Touch: 
+yellowbridgeconnections@gmail.com
 
-| Capability / Benchmark Suite | Standard Vector RAG | TimeMeshin v0.2.1 ($S \times T$) | Outcome |
-| :--- | :--- | :--- | :--- |
-| **1. Point-in-Time Auditing** | ❌ **Failed:** Leaks future events into prompt | ✅ **Passed:** Mask $t \le t_{\text{target}}$ delivers exact ground truth | **0% temporal leakage** |
-| **2. Multi-Hop Causal Discovery** | ❌ **Failed:** Unconnected vector clusters | ✅ **Passed:** Self-wired DAG traverses PR $\to$ DB $\to$ Outage | **Deterministic causality** |
-| **3. Agent Simulation Sandbox** | ❌ **Failed:** Read-only / impossible to branch | ✅ **Passed:** In-memory copy-on-write sandbox | **Safe counterfactuals** |
-| **4. Spurious Correlation Rejection** | ❌ **Failed:** Noise commits link to outages | ✅ **Passed:** Topological scoping rejects unrelated CSS commits | **Causal precision** |
-| **5. Ghost Rebase Detection (OCC)** | ❌ **Failed:** Silent corruption on drift | ✅ **Passed:** Vector clock catches timeline mutations | **Transactional safety** |
+👤 Author: Chandramouli (@Changmaulee)
 
----
-
-## 🧪 Running Tests
-
-```bash
-python -m unittest discover tests
-```
-
----
-
-## 📄 License
-
-Apache-2.0. Authored by Chandramouli ([@Changmaulee](https://github.com/Changmaulee)).
+📄 License
+TimeMeshin is open-sourced under the 
+Apache-2.0 License
