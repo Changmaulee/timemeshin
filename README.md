@@ -2,7 +2,7 @@
 > **Deterministic Spatio-Temporal ($S \times T$) Context Engine & Episodic Memory Substrate for AI Agents**  
 > *Authored by Chandramouli ([@Changmaulee](https://github.com/Changmaulee)) &bull; Contact: [yellowbridgeconnections@gmail.com](mailto:yellowbridgeconnections@gmail.com)*
 
-[![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+[![License](https://img.shields.io/badge/License-FSL--1.1--Apache--2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Python Version](https://img.shields.io/badge/python-3.8%2B-brightgreen.svg)](https://python.org)
 [![Tests](https://img.shields.io/badge/tests-passing-success.svg)](https://github.com/Changmaulee/timemeshin)
 [![Architecture](https://img.shields.io/badge/Architecture-S%20x%20T%20Dual--Coordinate-orange.svg)](#core-architecture)
@@ -130,4 +130,4 @@ Building an autonomous coding agent, DevOps copilot, or stateful RAG pipeline? W
 ---
 
 ## 📄 License
-TimeMeshin is open-sourced under the [Apache-2.0 License](LICENSE).
+TimeMeshin is open-sourced under the [FSL-1.1-Apache-2.0 License](LICENSE).
