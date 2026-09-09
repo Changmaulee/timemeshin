@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=61.0"]
+requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -7,6 +7,7 @@ name = "timemeshin"
 version = "0.2.1"
 description = "Deterministic Spatio-Temporal (S x T) Video-Scrubber Context Engine & Episodic Memory Substrate for AI Agents"
 readme = "README.md"
+requires-python = ">=3.8"
 authors = [
   { name = "Chandramouli", email = "moulee007@gmail.com" }
 ]
@@ -26,8 +27,8 @@ classifiers = [
     "Topic :: Software Development :: Libraries :: Python Modules",
 ]
 keywords = [
-    "llm",
     "rag",
+    "llm",
     "memory",
     "episodic-memory",
     "spatio-temporal",
@@ -40,12 +41,36 @@ keywords = [
 dependencies = []
 
 [project.optional-dependencies]
+server = [
+    "fastapi>=0.100.0",
+    "uvicorn>=0.20.0",
+    "python-multipart>=0.0.6",
+    "pydantic>=1.10.0"
+]
 dev = [
     "pytest>=7.0.0",
-    "pydantic>=2.0.0"
+    "fastapi>=0.100.0",
+    "uvicorn>=0.20.0",
+    "httpx>=0.24.0",
+    "pydantic>=1.10.0",
+    "tabulate>=0.9.0"
+]
+all = [
+    "fastapi>=0.100.0",
+    "uvicorn>=0.20.0",
+    "python-multipart>=0.0.6",
+    "pypdf>=3.0.0",
+    "tabulate>=0.9.0",
+    "pydantic>=1.10.0"
 ]
 
 [project.urls]
 Homepage = "https://github.com/Changmaulee/timemeshin"
 Repository = "https://github.com/Changmaulee/timemeshin"
 "Bug Tracker" = "https://github.com/Changmaulee/timemeshin/issues"
+
+[tool.setuptools]
+packages = ["timemeshin", "timemeshin.ingestion", "timemeshin.server"]
+
+[tool.setuptools.package-data]
+"*" = ["*.json", "*.md", "*.html"]
