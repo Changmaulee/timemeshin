@@ -1,136 +1,130 @@
-# ⏳ TimeMeshin
+# TimeMeshin (v0.2.1)
+> **Deterministic Spatio-Temporal ($S \times T$) Context Engine & Episodic Memory Substrate for AI Agents**  
+> *Authored by Chandramouli ([@Changmaulee](https://github.com/Changmaulee))*
 
-> **The Deterministic Spatio-Temporal ($S \times T$) Video-Scrubber Context Engine for AI Agents & LLM Retrieval**
-
-[![License: FSL-1.1-Apache](https://img.shields.io/badge/License-FSL--1.1--Apache--2.0-blue.svg)](LICENSE)
-[![Python: 3.9+](https://img.shields.io/badge/Python-3.9%2B-brightgreen.svg)]()
-[![PyPI: timemeshin](https://img.shields.io/badge/PyPI-timemeshin-blue.svg)]()
-[![Antigravity: Skill Enabled](https://img.shields.io/badge/Antigravity-Skill%20%26%20Plugin-orange.svg)]()
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Changmaulee/timemeshin/blob/main/examples/TimeMeshin_Colab_Quickstart.ipynb)
+[![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+[![Python Version](https://img.shields.io/badge/python-3.8%2B-brightgreen.svg)](https://python.org)
+[![Tests](https://img.shields.io/badge/tests-passing-success.svg)](https://github.com/Changmaulee/timemeshin)
 
 ---
 
-## 💡 Why TimeMeshin?
+## 🚀 Overview
 
-Traditional Vector RAG (Pinecone, Chroma, Milvus) flattens time into an atemporal bag of chunks. When information evolves, past and future collide, resulting in **87%+ future-data leakage** and **94% failure rates on stateful queries**.
+**TimeMeshin** is a spatio-temporal episodic memory engine engineered specifically to solve the temporal blindness, conflicting context clutter, and causal opacity of standard Vector RAG.
 
-**TimeMeshin** is the world's first **Time-Travel Context Engine**, modeled after **digital video codecs (MPEG / H.264)** and **Database Event Sourcing**:
-1. **I-Frames (Keyframes):** Consolidated world state snapshots at regular intervals.
-2. **P-Frames (Delta Frames):** State mutations tracking `(Entity, Attribute, OldValue ➔ NewValue, CausalReason)`.
-3. **The Playhead Scrubber:** A deterministic function $f(t) = \text{Keyframe} + \sum \Delta_t$ that scrubs backwards and forwards through time with 100% mathematical fidelity.
-4. **Git-Rebase Time Splicing:** Retroactively splices out-of-order late-arriving events into history without breaking downstream keyframes.
-5. **Transitive Causal DAGs:** Autonomously traces multi-hop cross-entity domino effects (*Sarah Leaves ➔ Alex Assigned ➔ CockroachDB Deployed ➔ Budget Spikes*).
+By unifying a **Hard Temporal Fence ($T$)** with **Dense Semantic Vector Ranking ($S$)**, **Topological Causal Discovery**, and **Optimistic Concurrency Control (OCC) on B-Frames**, TimeMeshin provides 100% deterministic, point-in-time ground truth for AI agents without future-data contamination or dirty state commits.
 
 ---
 
-## 🚀 Quickstart
+## 🏛️ Core Architectural Upgrades
 
-### 1. Installation via PyPI
-```bash
-pip install timemeshin
+```
+                                [INCOMING RAW LOG STREAM]
+                                            │
+               ┌────────────────────────────┴────────────────────────────┐
+               ▼                                                         ▼
+       [1. FAST PATH (<2ms)]                                [2. ASYNC REFINEMENT WORKER]
+  Write-Ahead Append: SQLite Event Table                 SLM Grammar Extractor & Structuring
+               │                                                         │
+               └────────────────────────────┬────────────────────────────┘
+                                            │
+                             [3. TOPOLOGICAL CAUSAL SCOPING]
+                             ├── Entity Dependency Graph (e.g. auth_service -> auth_db)
+                             └── Calibrated NLI Score: P(Entailment) - P(Contradiction) >= 0.85
+                                            │
+                             [4. B-FRAME OCC EPOCH TRACKER]
+                             ├── Base Epoch Hash at t_branch
+                             └── Conflict Detection on commit_to_main()
 ```
 
-### 2. Antigravity Agent Skill Integration (1-Command Install)
-Equip Google Antigravity or any agentic workflow with global TimeMeshin memory:
+### 1. Two-Speed Ingestion & Zero-ETL Delta Extractor (`extractor.py`, `client.py`)
+* **Fast-Path Sync (`<2ms`):** Appends raw unparsed engineering prose directly to SQLite Write-Ahead Log as a `SemanticEvent`.
+* **Refinement Worker:** Extracts structured state deltas ($\Delta = \langle t, e, r, a, v_{\text{old}}, v_{\text{new}}, c_i, \text{modality} \rangle$) and compacts Keyframes without blocking write throughput.
 
-```bash
-# Global installation for your machine (~/.gemini/config)
-timemeshin install-skill
+### 2. $S \times T$ Hybrid Bihalo Index & Scrubber (`engine.py`, `storage.py`)
+* **Coordinate $T$ (Temporal Fence):** Strictly masks $t > t_{\text{playhead}}$ to guarantee **0% future-data leakage**.
+* **Keyframe State Consolidation ($I$-Frames):** Collapses historical $P$-Frames into a single, unambiguous active entity state table.
+* **Coordinate $S$ (Semantic Ranking):** Ranks historical causal rationales and state transitions using dense cosine similarity.
 
-# Or workspace-only installation for your repository (.agents/)
-timemeshin install-skill --project
-```
+### 3. Self-Wiring Causal DAG with Topological Scoping (`causality.py`)
+* **Spurious Correlation Rejection:** Enforces runtime architectural topology boundaries (`auth_service` $\to$ `database` $\to$ `api_gateway`). Unrelated noisy commits (e.g. frontend CSS changes) are scoped out before computing embeddings.
+* **Calibrated Directional NLI:** Computes $\text{Confidence}(A \to B) = P(\text{Entailment}) - P(\text{Contradiction})$ with configurable gating.
+* **Multi-Hop Traversal:** Traverses dependency graphs backwards to output chronological root-cause chains directly into LLM prompts.
 
----
-
-## 📊 Benchmark Results (500 Events, 30 Days, 100 Queries)
-
-| Evaluation Metric | Standard Vector RAG | TimeMeshin ($S \times T$) Engine |
-| :--- | :--- | :--- |
-| **Point-in-Time State Accuracy** | **6%** *(94% failure rate)* | **🌟 100%** *(Deterministic ground truth)* |
-| **Future Contamination Rate** | **❌ 87%** *(leaked future events)* | **🛡️ 0%** *(Zero future leakage)* |
-| **Retrieval Latency** | `26.51 ms` | **`24.14 ms`** *(Faster due to temporal pruning)* |
+### 4. $B$-Frame Ephemeral Branching with OCC (`branching.py`)
+* **Sandboxed Counterfactuals:** In-memory Copy-on-Write (CoW) sandbox ($S_{\text{branch}}(t) = S(t) \oplus \Delta_{\text{hypothetical}}$) for agents to test rollbacks, migrations, and multi-step plans.
+* **Ghost Rebase Prevention (OCC):** Tracks SHA-256 vector clock epochs on the base timeline. If the underlying timeline receives out-of-order mutations during a simulation, `commit_to_main()` detects timeline drift and raises `BranchConflictError`.
 
 ---
 
-## 🐍 Plug-and-Play Python Client (2 Lines of Code)
+## 📦 Quickstart Python Usage
 
 ```python
 from timemeshin import TimeMeshinClient
 
-# 1. Initialize Client (Zero-config persistent SQLite memory)
-client = TimeMeshinClient(db_path="enterprise_memory.db")
+# 1. Initialize persistent SQLite substrate
+client = TimeMeshinClient(db_path="timemeshin_memory.db")
 
-# 2. Ingest raw text stream in real-time
-client.ingest("We migrated our database to DynamoDB on Tuesday due to write contention. Budget is now $5000.")
+# 2. Ingest raw unstructured text (Fast-Path or Synchronous)
+client.ingest("Initial setup: primary database set to Postgres (max_connections=100).", timestamp="2026-09-08 09:00:00")
+client.ingest("Switched primary database from Postgres to DynamoDB due to write lock contention.", timestamp="2026-09-08 11:30:00")
+client.ingest("PR #402 merged (auth_service updated to v2.0 with aggressive connection pooling).", timestamp="2026-09-08 14:42:00")
+client.ingest("Reduced database max_connections 100 -> 20 to preserve cloud resources.", timestamp="2026-09-08 14:50:00")
+client.ingest("HTTP 504 Gateway Timeouts detected on API gateway due to pool exhaustion.", timestamp="2026-09-08 15:00:00")
 
-# 3. Time-Travel Playhead Scrub
-state = client.scrub(playhead="2026-09-02 14:00")
-print(state)
-# Output: {'Database': {'Engine': 'DynamoDB'}, 'MonthlyCloudBudget': {'AmountUSD': 5000}}
+# 3. Deterministic Point-in-Time Scrubbing (t = 12:00 Noon)
+kf = client.scrub(playhead="2026-09-08 12:00:00")
+print(kf.get_entity_state("database"))
+# Returns: {'engine': 'DynamoDB', 'max_connections': '100', '_last_updated': '2026-09-08 11:30:00'}
 
-# 4. Dual-Coordinate Query (Exact state + Top ranked causal history)
-result = client.query("Why did we change our database?", playhead="2026-09-02 14:00")
-print(result["exact_state"])
-print(result["relevant_events"])
+# 4. S x T Dual-Coordinate Query with Compiled Prompt
+result = client.query("What was our database engine and configuration?", playhead="2026-09-08 12:00:00")
+print(result["compiled_prompt_context"])
+
+# 5. Multi-Hop Causal Root-Cause Trace
+causal_narrative = client.trace_prompt("HTTP 504 Outage", target_id_or_entity="api_gateway", playhead="2026-09-08 15:05:00")
+print(causal_narrative)
+
+# 6. B-Frame Speculative Counterfactual Simulation (Guarded by OCC)
+with client.branch(from_playhead="2026-09-08 15:00:00", name="sim_rollback") as sim:
+    sim.ingest_hypothetical(
+        entity="database",
+        attribute="max_connections",
+        v_new="100",
+        v_old="20",
+        causal_rationale="Simulated hotfix: restore connection pool"
+    )
+    assert sim.scrub().get_entity_state("database")["max_connections"] == "100"
+    # Auto-discarded upon context exit! Master timeline remains untouched.
 ```
 
 ---
 
-## 🌐 Interactive Demos
+## 📊 Live Benchmark Comparison
 
-* **Google Colab Notebook:** Run live with 1000+ GitHub commits in the cloud: [TimeMeshin_Colab_Quickstart.ipynb](examples/TimeMeshin_Colab_Quickstart.ipynb)
-* **Light-Theme Web Dashboard:** Open `examples/interactive_dashboard.html` in your browser for a local UI with live playhead slider and causal DAG visualization.
+To run the live 5-suite benchmark:
+```bash
+python benchmark.py
+```
+
+| Capability / Benchmark Suite | Standard Vector RAG | TimeMeshin v0.2.1 ($S \times T$) | Outcome |
+| :--- | :--- | :--- | :--- |
+| **1. Point-in-Time Auditing** | ❌ **Failed:** Leaks future events into prompt | ✅ **Passed:** Mask $t \le t_{\text{target}}$ delivers exact ground truth | **0% temporal leakage** |
+| **2. Multi-Hop Causal Discovery** | ❌ **Failed:** Unconnected vector clusters | ✅ **Passed:** Self-wired DAG traverses PR $\to$ DB $\to$ Outage | **Deterministic causality** |
+| **3. Agent Simulation Sandbox** | ❌ **Failed:** Read-only / impossible to branch | ✅ **Passed:** In-memory copy-on-write sandbox | **Safe counterfactuals** |
+| **4. Spurious Correlation Rejection** | ❌ **Failed:** Noise commits link to outages | ✅ **Passed:** Topological scoping rejects unrelated CSS commits | **Causal precision** |
+| **5. Ghost Rebase Detection (OCC)** | ❌ **Failed:** Silent corruption on drift | ✅ **Passed:** Vector clock catches timeline mutations | **Transactional safety** |
 
 ---
 
-## 🌐 REST API Server
-
-Start the production server:
+## 🧪 Running Tests
 
 ```bash
-timemeshin serve --host 0.0.0.0 --port 8000
-```
-
-* **Swagger UI:** `http://localhost:8000/docs`
-* **Health Check:** `GET /health`
-* **Ingest Stream:** `POST /api/v1/ingest`
-* **Scrub Playhead:** `GET /api/v1/scrub?playhead_time=2026-09-02T14:00:00`
-* **Dual-Coordinate Query:** `POST /api/v1/query`
-* **Entity Trajectory:** `GET /api/v1/trace/{entity_id}`
-
----
-
-## 📁 Repository Structure
-
-```
-timemeshin/
-├── .agents/                   # Antigravity Global & Project Skills / Plugins
-│   ├── plugins/timemeshin/
-│   └── skills/timemeshin/
-├── .github/workflows/         # Automated PyPI publication CI/CD
-├── timemeshin/                # Core Python Package
-│   ├── cli.py                 # CLI & Antigravity installer
-│   ├── client.py              # TimeMeshinClient SDK
-│   ├── core/                  # Keyframes, Deltas, & Video-Scrubber Engine
-│   ├── ingestion/             # Multi-format document loader & stream parser
-│   ├── storage/               # SQLite / transactional state store
-│   └── server/                # FastAPI REST endpoints
-├── paper/                     # Formal academic research paper
-├── benchmarks/                # Automated 30-day benchmark suite
-├── examples/                  # Interactive Dashboard & Colab Notebooks
-├── scripts/                   # Build, release, and installer scripts
-├── pyproject.toml             # Standard PEP 517/621 packaging
-└── README.md
+python -m unittest discover tests
 ```
 
 ---
 
-## 📜 License
+## 📄 License
 
-This project is licensed under the **Functional Source License, Version 1.1 (FSL-1.1-Apache-2.0)**:
-
-* **100% Free for Individuals & Developers:** Free for personal use, research, education, and learning.
-* **100% Free for Internal Business / Commercial Use:** Companies can freely build, embed, and deploy TimeMeshin for all internal systems and applications.
-* **Competitive Cloud Protection:** Prevents cloud vendors and third parties from taking the software and reselling it as a competing managed cloud SaaS/PaaS service.
-* **Automatic Open Source Conversion:** Converts automatically into pure **Apache 2.0** open source exactly **2 years** after each release.
+Apache-2.0. Authored by Chandramouli ([@Changmaulee](https://github.com/Changmaulee)).

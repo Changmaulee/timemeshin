@@ -1,33 +1,34 @@
 """
-TimeMeshin: Deterministic Spatio-Temporal (S x T) Video-Scrubber Context Engine for LLM Retrieval.
+TimeMeshin Next-Gen: Deterministic Spatio-Temporal (S x T) Memory Substrate.
+Authored by Chandramouli (@Changmaulee).
 """
 
-from .core.frames import DeltaFrame, Keyframe
-from .core.engine import ChronoMeshEngine as TimeMeshinEngine
-from .core.causal_dag import TimelessPhase2Engine as TimeMeshinPhase2Engine, AdvancedDelta, StateModality, EntityAliasGraph
-from .ingestion.extractor import StructuredDeltaExtractor
-from .ingestion.llm_client import LLMDeltaExtractor
-from .ingestion.document_loader import DocumentLoader
-from .ingestion.folder_watcher import FolderWatcher
-from .storage.sqlite_store import SQLiteStorage
-from .client import ChronoMeshClient as TimeMeshinClient
-from .gemini_integration import GeminiTimeMeshinChat, GEMINI_TIMEMESHIN_TOOLS
+from .models import StateDelta, SemanticEvent, Keyframe, CausalEdge, Modality, BranchConflictError
+from .extractor import ZeroETLExtractor
+from .storage import TimeMeshinStorage, LightweightEmbedder
+from .causality import CausalDAG, TopologyGraph
+from .branching import EphemeralBranch
+from .engine import SpatioTemporalEngine
+from .client import TimeMeshinClient
 
-__version__ = "0.1.0"
+# Backward compatibility
+ChronoMeshClient = TimeMeshinClient
+
+__version__ = "0.2.1"
 __all__ = [
-    "DeltaFrame",
-    "Keyframe",
-    "TimeMeshinEngine",
-    "TimeMeshinPhase2Engine",
-    "AdvancedDelta",
-    "StateModality",
-    "EntityAliasGraph",
-    "StructuredDeltaExtractor",
-    "LLMDeltaExtractor",
-    "DocumentLoader",
-    "FolderWatcher",
-    "SQLiteStorage",
     "TimeMeshinClient",
-    "GeminiTimeMeshinChat",
-    "GEMINI_TIMEMESHIN_TOOLS"
+    "ChronoMeshClient",
+    "StateDelta",
+    "SemanticEvent",
+    "Keyframe",
+    "CausalEdge",
+    "Modality",
+    "BranchConflictError",
+    "TopologyGraph",
+    "ZeroETLExtractor",
+    "TimeMeshinStorage",
+    "LightweightEmbedder",
+    "CausalDAG",
+    "EphemeralBranch",
+    "SpatioTemporalEngine",
 ]

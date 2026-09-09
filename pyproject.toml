@@ -4,49 +4,48 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "timemeshin"
-version = "0.1.0"
-description = "TimeMeshin: Deterministic Spatio-Temporal (S x T) Video-Scrubber Context Engine for LLM Retrieval"
+version = "0.2.1"
+description = "Deterministic Spatio-Temporal (S x T) Video-Scrubber Context Engine & Episodic Memory Substrate for AI Agents"
 readme = "README.md"
-requires-python = ">=3.9"
-license = {text = "FSL-1.1-Apache-2.0"}
 authors = [
-    {name = "Chandramouli & Antigravity Research"}
+  { name = "Chandramouli", email = "moulee007@gmail.com" }
 ]
-keywords = ["rag", "llm", "temporal-rag", "video-codec", "time-travel", "event-sourcing", "ai-memory", "timemeshin", "antigravity"]
-dependencies = [
-    "numpy>=1.20.0",
-    "tabulate>=0.9.0",
-    "pydantic>=1.10.0",
-    "tqdm>=4.65.0"
+license = { text = "Apache-2.0" }
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: Apache Software License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Software Development :: Libraries :: Python Modules",
 ]
-
-[project.scripts]
-timemeshin = "timemeshin.cli:main"
-
-[tool.setuptools.packages.find]
-where = ["."]
-include = ["timemeshin*"]
-exclude = ["paper*", "benchmarks*", "examples*", "tests*"]
+keywords = [
+    "llm",
+    "rag",
+    "memory",
+    "episodic-memory",
+    "spatio-temporal",
+    "time-travel",
+    "state-machine",
+    "causal-inference",
+    "ai-agents",
+    "antigravity"
+]
+dependencies = []
 
 [project.optional-dependencies]
-embeddings = [
-    "sentence-transformers>=2.2.0"
-]
-server = [
-    "fastapi>=0.100.0",
-    "uvicorn>=0.20.0"
-]
 dev = [
     "pytest>=7.0.0",
-    "ipywidgets>=8.0.0",
-    "fastapi>=0.100.0",
-    "uvicorn>=0.20.0",
-    "build>=1.0.0",
-    "twine>=4.0.0"
+    "pydantic>=2.0.0"
 ]
-all = [
-    "sentence-transformers>=2.2.0",
-    "fastapi>=0.100.0",
-    "uvicorn>=0.20.0",
-    "pypdf>=3.0.0"
-]
+
+[project.urls]
+Homepage = "https://github.com/Changmaulee/timemeshin"
+Repository = "https://github.com/Changmaulee/timemeshin"
+"Bug Tracker" = "https://github.com/Changmaulee/timemeshin/issues"
