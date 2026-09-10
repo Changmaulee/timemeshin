@@ -11,6 +11,19 @@ from .branching import EphemeralBranch
 from .engine import SpatioTemporalEngine
 from .client import TimeMeshinClient
 
+# Level 3: AST & ShowLLM Cartridge Foundry
+from .code_lineage import ASTCodeAnalyzer
+from .cartridge import CartridgeBuilder, CartridgeDecoder
+
+# Level 4: OS Kernel & File I/O Tracing
+from .kernel_tracer import FileSystemWatcher, ProcessCommandTracer
+
+# Level 5: Multimodal Sensory Memory
+from .multimodal_memory import VisualFrameMemory, AudioSensoryMemory
+
+# Level 6: Counterfactual Causal Simulation
+from .counterfactual_engine import CounterfactualEngine, CounterfactualBranch
+
 # Backward compatibility
 ChronoMeshClient = TimeMeshinClient
 
@@ -31,4 +44,13 @@ __all__ = [
     "CausalDAG",
     "EphemeralBranch",
     "SpatioTemporalEngine",
+    "ASTCodeAnalyzer",
+    "CartridgeBuilder",
+    "CartridgeDecoder",
+    "FileSystemWatcher",
+    "ProcessCommandTracer",
+    "VisualFrameMemory",
+    "AudioSensoryMemory",
+    "CounterfactualEngine",
+    "CounterfactualBranch"
 ]
