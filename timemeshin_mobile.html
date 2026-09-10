@@ -513,73 +513,97 @@
 
             <!-- L1 -->
             <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--border-subtle); border-radius: 8px; padding: 10px;">
-                <div style="font-weight: 700; font-size: 12px; color: #10b981; display: flex; justify-content: space-between;">
+                <div style="font-weight: 700; font-size: 12px; color: #10b981; display: flex; justify-content: space-between; align-items: center;">
                     <span>⏱️ L1: Telemetry & App Focus</span>
-                    <span style="font-size: 9px; font-family: 'Fira Code'; color: var(--accent-emerald);">CPU: &lt;0.1%</span>
+                    <div style="display: flex; gap: 4px;">
+                        <span style="font-size: 9px; font-family: 'Fira Code'; color: var(--accent-emerald);">CPU: &lt;0.1%</span>
+                        <span style="font-size: 9px; font-family: 'Fira Code'; color: #10b981; background: rgba(16,185,129,0.15); padding: 1px 4px; border-radius: 4px;">💾 ~10 KB - 25 KB</span>
+                    </div>
                 </div>
-                <div style="font-size: 11px; color: var(--text-secondary); margin-top: 4px;">
+                <div style="font-size: 11px; color: var(--text-secondary); margin-top: 4px; line-height: 1.4;">
                     <strong>Captures:</strong> App window titles, focus dwell duration, idle status.<br>
-                    <strong>Privacy:</strong> 100% Zero-content capture.
+                    <strong>Privacy:</strong> 100% Zero-content capture. No keystrokes or screens.<br>
+                    <strong>24h Upside Storage:</strong> <code>~10 KB to 25 KB / day</code> (compressed SQLite WAL).
                 </div>
             </div>
 
             <!-- L2 -->
             <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--border-subtle); border-radius: 8px; padding: 10px;">
-                <div style="font-weight: 700; font-size: 12px; color: #00e5ff; display: flex; justify-content: space-between;">
+                <div style="font-weight: 700; font-size: 12px; color: #00e5ff; display: flex; justify-content: space-between; align-items: center;">
                     <span>💬 L2: Narrative & Episodic</span>
-                    <span style="font-size: 9px; font-family: 'Fira Code'; color: var(--accent-cyan);">CPU: ~0.2%</span>
+                    <div style="display: flex; gap: 4px;">
+                        <span style="font-size: 9px; font-family: 'Fira Code'; color: var(--accent-cyan);">CPU: ~0.2%</span>
+                        <span style="font-size: 9px; font-family: 'Fira Code'; color: #00e5ff; background: rgba(0,229,255,0.15); padding: 1px 4px; border-radius: 4px;">💾 ~120 KB - 350 KB</span>
+                    </div>
                 </div>
-                <div style="font-size: 11px; color: var(--text-secondary); margin-top: 4px;">
+                <div style="font-size: 11px; color: var(--text-secondary); margin-top: 4px; line-height: 1.4;">
                     <strong>Captures:</strong> AI chat conversations, Time Stone tab/form restoration states, voice memos.<br>
-                    <strong>Privacy:</strong> Episodic prompt memory. Passwords excluded.
+                    <strong>Privacy:</strong> Episodic prompt memory. Passwords excluded.<br>
+                    <strong>24h Upside Storage:</strong> <code>~120 KB to 350 KB / day</code> (~100 AI chats + form snapshots).
                 </div>
             </div>
 
             <!-- L3 -->
             <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--border-subtle); border-radius: 8px; padding: 10px;">
-                <div style="font-weight: 700; font-size: 12px; color: #10b981; display: flex; justify-content: space-between;">
+                <div style="font-weight: 700; font-size: 12px; color: #10b981; display: flex; justify-content: space-between; align-items: center;">
                     <span>🧬 L3: AST & Code Lineage</span>
-                    <span style="font-size: 9px; font-family: 'Fira Code'; color: var(--accent-emerald);">CPU: ~0.5%</span>
+                    <div style="display: flex; gap: 4px;">
+                        <span style="font-size: 9px; font-family: 'Fira Code'; color: var(--accent-emerald);">CPU: ~0.5%</span>
+                        <span style="font-size: 9px; font-family: 'Fira Code'; color: #10b981; background: rgba(16,185,129,0.15); padding: 1px 4px; border-radius: 4px;">💾 ~1.5 MB - 4.5 MB</span>
+                    </div>
                 </div>
-                <div style="font-size: 11px; color: var(--text-secondary); margin-top: 4px;">
+                <div style="font-size: 11px; color: var(--text-secondary); margin-top: 4px; line-height: 1.4;">
                     <strong>Captures:</strong> Python syntax trees, function/class diffs, ShowLLM Cartridge Forge (`.json`).<br>
-                    <strong>Privacy:</strong> Code structure without environment secrets.
+                    <strong>Privacy:</strong> Code structure without environment secrets.<br>
+                    <strong>24h Upside Storage:</strong> <code>~1.5 MB to 4.5 MB / day</code> (~300 saves). ShowLLM: ~500 KB.
                 </div>
             </div>
 
             <!-- L4 -->
             <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--border-subtle); border-radius: 8px; padding: 10px;">
-                <div style="font-weight: 700; font-size: 12px; color: #f59e0b; display: flex; justify-content: space-between;">
+                <div style="font-weight: 700; font-size: 12px; color: #f59e0b; display: flex; justify-content: space-between; align-items: center;">
                     <span>⚙️ L4: OS Kernel & File I/O</span>
-                    <span style="font-size: 9px; font-family: 'Fira Code'; color: var(--accent-amber);">CPU: ~1.0%</span>
+                    <div style="display: flex; gap: 4px;">
+                        <span style="font-size: 9px; font-family: 'Fira Code'; color: var(--accent-amber);">CPU: ~1.0%</span>
+                        <span style="font-size: 9px; font-family: 'Fira Code'; color: #f59e0b; background: rgba(245,158,11,0.15); padding: 1px 4px; border-radius: 4px;">💾 ~8 MB - 20 MB</span>
+                    </div>
                 </div>
-                <div style="font-size: 11px; color: var(--text-secondary); margin-top: 4px;">
+                <div style="font-size: 11px; color: var(--text-secondary); margin-top: 4px; line-height: 1.4;">
                     <strong>Captures:</strong> FileSystemWatcher file events, terminal execution, compiler exit codes.<br>
-                    <strong>Privacy:</strong> Workspace file paths and execution status.
+                    <strong>Privacy:</strong> Workspace file paths and execution status.<br>
+                    <strong>24h Upside Storage:</strong> <code>~8 MB to 20 MB / day</code> (~15,000 build/npm events & logs).
                 </div>
             </div>
 
             <!-- L5 -->
             <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--border-subtle); border-radius: 8px; padding: 10px;">
-                <div style="font-weight: 700; font-size: 12px; color: #ec4899; display: flex; justify-content: space-between;">
+                <div style="font-weight: 700; font-size: 12px; color: #ec4899; display: flex; justify-content: space-between; align-items: center;">
                     <span>👁️ L5: Multimodal Memory</span>
-                    <span style="font-size: 9px; font-family: 'Fira Code'; color: #ec4899;">CPU: ~2.5%</span>
+                    <div style="display: flex; gap: 4px;">
+                        <span style="font-size: 9px; font-family: 'Fira Code'; color: #ec4899;">CPU: ~2.5%</span>
+                        <span style="font-size: 9px; font-family: 'Fira Code'; color: #ec4899; background: rgba(236,72,153,0.15); padding: 1px 4px; border-radius: 4px;">💾 ~85 MB - 180 MB</span>
+                    </div>
                 </div>
-                <div style="font-size: 11px; color: var(--text-secondary); margin-top: 4px;">
+                <div style="font-size: 11px; color: var(--text-secondary); margin-top: 4px; line-height: 1.4;">
                     <strong>Captures:</strong> Visual keyframe diffs, on-device OCR screen extraction, speech transcripts.<br>
-                    <strong>Privacy:</strong> 100% On-Device local buffers. Zero cloud leakage.
+                    <strong>Privacy:</strong> 100% On-Device local buffers. Zero cloud leakage.<br>
+                    <strong>24h Upside Storage:</strong> <code>~85 MB to 180 MB / day</code> (<strong>100x lighter</strong> than Recall).
                 </div>
             </div>
 
             <!-- L6 -->
             <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--border-subtle); border-radius: 8px; padding: 10px;">
-                <div style="font-weight: 700; font-size: 12px; color: #ef4444; display: flex; justify-content: space-between;">
+                <div style="font-weight: 700; font-size: 12px; color: #ef4444; display: flex; justify-content: space-between; align-items: center;">
                     <span>🔮 L6: Counterfactual Sandbox</span>
-                    <span style="font-size: 9px; font-family: 'Fira Code'; color: #ef4444;">CPU: ~4.0%</span>
+                    <div style="display: flex; gap: 4px;">
+                        <span style="font-size: 9px; font-family: 'Fira Code'; color: #ef4444;">CPU: ~4.0%</span>
+                        <span style="font-size: 9px; font-family: 'Fira Code'; color: #ef4444; background: rgba(239,68,68,0.15); padding: 1px 4px; border-radius: 4px;">💾 ~25 MB - 60 MB</span>
+                    </div>
                 </div>
-                <div style="font-size: 11px; color: var(--text-secondary); margin-top: 4px;">
+                <div style="font-size: 11px; color: var(--text-secondary); margin-top: 4px; line-height: 1.4;">
                     <strong>Captures:</strong> B-Frame speculative branching, What-If simulations, OCC conflict detection.<br>
-                    <strong>Privacy:</strong> Isolated timeline universes without modifying base state.
+                    <strong>Privacy:</strong> Isolated timeline universes without modifying base state.<br>
+                    <strong>24h Upside Storage:</strong> <code>~25 MB to 60 MB / day</code> (multi-universe OCC delta trees).
                 </div>
             </div>
         </div>
@@ -635,7 +659,10 @@
             <div class="mobile-lvl-info">
                 <div class="mobile-lvl-title-row">
                     <div class="mobile-lvl-name" id="m-lvl-name">Level 3: AST & Code Lineage</div>
-                    <span style="font-size: 9px; font-family: 'Fira Code'; color: var(--accent-emerald); background: rgba(16,185,129,0.15); padding: 2px 6px; border-radius: 8px;" id="m-lvl-pill">CPU: ~0.5%</span>
+                    <div style="display: flex; gap: 4px; align-items: center;">
+                        <span style="font-size: 9px; font-family: 'Fira Code'; color: var(--accent-emerald); background: rgba(16,185,129,0.15); padding: 2px 6px; border-radius: 8px;" id="m-lvl-pill">CPU: ~0.5%</span>
+                        <span style="font-size: 9px; font-family: 'Fira Code'; color: #10b981; background: rgba(16,185,129,0.15); border: 1px solid rgba(16,185,129,0.3); padding: 2px 6px; border-radius: 8px;" id="m-lvl-storage">💾 24h: ~1.5 - 4.5 MB</span>
+                    </div>
                 </div>
                 <div class="mobile-lvl-desc" id="m-lvl-desc">
                     AST syntax tree diffs, function lineage tracking & ShowLLM Movie-Codec Cartridge Foundry.
@@ -781,12 +808,12 @@
 
         let mDepthLevel = 3;
         const M_DEPTH_CONFIGS = {
-            1: { name: "Level 1: Telemetry & Focus", badge: "L1: TELEMETRY", pill: "CPU: <0.1%", desc: "Passive window title polling & process switches with zero content capture.", color: "#10b981" },
-            2: { name: "Level 2: Episodic Surface", badge: "L2: EPISODIC", pill: "CPU: ~0.2%", desc: "AI chat prompts, Doctor Strange Time Stone tab recovery & voice notes.", color: "#00e5ff" },
-            3: { name: "Level 3: AST & Code Lineage", badge: "L3: AST LINEAGE", pill: "CPU: ~0.5%", desc: "AST syntax tree diffs, function lineage tracking & ShowLLM Cartridge Forge.", color: "#10b981" },
-            4: { name: "Level 4: OS Kernel Tracing", badge: "L4: KERNEL TRACE", pill: "CPU: ~1.0%", desc: "Real-time file mutations, terminal exit codes & build failure causal links.", color: "#f59e0b" },
-            5: { name: "Level 5: Multimodal Memory", badge: "L5: MULTIMODAL", pill: "CPU: ~2.5%", desc: "Perceptual visual keyframes, OCR screen diffs & audio speech buffers.", color: "#ec4899" },
-            6: { name: "Level 6: Counterfactual Sim", badge: "L6: COUNTERFACTUAL", pill: "CPU: ~4.0%", desc: "B-Frame causal branching & Optimistic Concurrency Control (OCC) sandbox.", color: "#ef4444" }
+            1: { name: "Level 1: Telemetry & Focus", badge: "L1: TELEMETRY", pill: "CPU: <0.1%", storage: "💾 24h: ~10 - 25 KB", desc: "Passive window title polling & process switches with zero content capture.", color: "#10b981" },
+            2: { name: "Level 2: Episodic Surface", badge: "L2: EPISODIC", pill: "CPU: ~0.2%", storage: "💾 24h: ~120 - 350 KB", desc: "AI chat prompts, Doctor Strange Time Stone tab recovery & voice notes.", color: "#00e5ff" },
+            3: { name: "Level 3: AST & Code Lineage", badge: "L3: AST LINEAGE", pill: "CPU: ~0.5%", storage: "💾 24h: ~1.5 - 4.5 MB", desc: "AST syntax tree diffs, function lineage tracking & ShowLLM Cartridge Forge.", color: "#10b981" },
+            4: { name: "Level 4: OS Kernel Tracing", badge: "L4: KERNEL TRACE", pill: "CPU: ~1.0%", storage: "💾 24h: ~8 - 20 MB", desc: "Real-time file mutations, terminal exit codes & build failure causal links.", color: "#f59e0b" },
+            5: { name: "Level 5: Multimodal Memory", badge: "L5: MULTIMODAL", pill: "CPU: ~2.5%", storage: "💾 24h: ~85 - 180 MB", desc: "Perceptual visual keyframes, OCR screen diffs & audio speech buffers.", color: "#ec4899" },
+            6: { name: "Level 6: Counterfactual Sim", badge: "L6: COUNTERFACTUAL", pill: "CPU: ~4.0%", storage: "💾 24h: ~25 - 60 MB", desc: "B-Frame causal branching & Optimistic Concurrency Control (OCC) sandbox.", color: "#ef4444" }
         };
 
         function setMobileDepthLevel(lvl) {
@@ -811,6 +838,13 @@
 
             document.getElementById('m-lvl-name').innerText = cfg.name;
             document.getElementById('m-lvl-pill').innerText = cfg.pill;
+            const storageElem = document.getElementById('m-lvl-storage');
+            if (storageElem) {
+                storageElem.innerText = cfg.storage;
+                storageElem.style.color = cfg.color;
+                storageElem.style.borderColor = cfg.color + '44';
+                storageElem.style.background = cfg.color + '22';
+            }
             document.getElementById('m-lvl-desc').innerText = cfg.desc;
 
             for (let i = 1; i <= 6; i++) {

@@ -1076,6 +1076,7 @@
                         <div class="guide-title"><span style="color: #10b981;">⏱️</span> Level 1: Telemetry & App Focus</div>
                         <div class="guide-pills">
                             <span class="meta-pill cpu" style="color: #10b981; border-color: rgba(16,185,129,0.3);">CPU: &lt; 0.1%</span>
+                            <span class="meta-pill storage" style="color: #10b981; border-color: rgba(16,185,129,0.3);">💾 24h Max: ~10 KB – 25 KB</span>
                             <span class="meta-pill privacy">🔒 Ultra-Private Metadata</span>
                             <button class="btn-dial-from-modal" onclick="setDepthLevel(1); closeLevelGuideModal();">🎛️ Dial to L1</button>
                         </div>
@@ -1086,8 +1087,8 @@
                             <div class="guide-box-desc">• Active window titles & process executables (via native Win32/ctypes).<br>• Foreground task start/end timestamps and dwell time.<br>• User idle status detection (&gt;3 minutes inactive).</div>
                         </div>
                         <div class="guide-box">
-                            <div class="guide-box-title">🛡️ Privacy & Overhead:</div>
-                            <div class="guide-box-desc">• <strong>Zero content capture:</strong> No keystrokes, no file contents, no screenshots.<br>• Minimal storage footprint (~10 KB/day in SQLite WAL).</div>
+                            <div class="guide-box-title">🛡️ Privacy & 24h Storage Footprint:</div>
+                            <div class="guide-box-desc">• <strong>Zero content capture:</strong> No keystrokes, no file contents, no screenshots.<br>• <strong>Worst-Case 24h Storage:</strong> <code>~10 KB to 25 KB / day</code> (compressed SQLite WAL tuples).</div>
                         </div>
                     </div>
                 </div>
@@ -1098,6 +1099,7 @@
                         <div class="guide-title"><span style="color: #00e5ff;">💬</span> Level 2: Narrative & Episodic Surface</div>
                         <div class="guide-pills">
                             <span class="meta-pill cpu">CPU: ~0.2%</span>
+                            <span class="meta-pill storage" style="color: #00e5ff; border-color: rgba(0,229,255,0.3);">💾 24h Max: ~120 KB – 350 KB</span>
                             <span class="meta-pill privacy">🔒 Episodic Prompts & Form State</span>
                             <button class="btn-dial-from-modal" onclick="setDepthLevel(2); closeLevelGuideModal();">🎛️ Dial to L2</button>
                         </div>
@@ -1108,8 +1110,8 @@
                             <div class="guide-box-desc">• AI Chat conversations (prompts & outputs) across Gemini Web, ChatGPT, Claude.<br>• <strong>Doctor Strange Time Stone:</strong> Closed tab URLs & form inputs (auto-restorable).<br>• Mobile speech-to-text voice memos and thoughts.</div>
                         </div>
                         <div class="guide-box">
-                            <div class="guide-box-title">🛡️ Privacy & Overhead:</div>
-                            <div class="guide-box-desc">• Saves unstructured thoughts and conversational context.<br>• Password and secret fields are excluded by the extension.</div>
+                            <div class="guide-box-title">🛡️ Privacy & 24h Storage Footprint:</div>
+                            <div class="guide-box-desc">• Saves unstructured thoughts and conversational context with password fields excluded.<br>• <strong>Worst-Case 24h Storage:</strong> <code>~120 KB to 350 KB / day</code> (stores ~100 dense AI prompts & tab states).</div>
                         </div>
                     </div>
                 </div>
@@ -1120,6 +1122,7 @@
                         <div class="guide-title"><span style="color: #10b981;">🧬</span> Level 3: AST & Code Mutation Lineage</div>
                         <div class="guide-pills">
                             <span class="meta-pill cpu">CPU: ~0.5%</span>
+                            <span class="meta-pill storage" style="color: #10b981; border-color: rgba(16,185,129,0.3);">💾 24h Max: ~1.5 MB – 4.5 MB</span>
                             <span class="meta-pill privacy">🔒 Code Structural Diffs</span>
                             <button class="btn-dial-from-modal" onclick="setDepthLevel(3); closeLevelGuideModal();">🎛️ Dial to L3</button>
                         </div>
@@ -1130,8 +1133,8 @@
                             <div class="guide-box-desc">• Python AST syntax trees on file save (classes, functions, method arguments).<br>• Myers structural diffs between code revisions.<br>• <strong>ShowLLM Cartridge Foundry:</strong> Compiles standalone Movie-Codec knowledge cartridges (.json).</div>
                         </div>
                         <div class="guide-box">
-                            <div class="guide-box-title">🛡️ Privacy & Overhead:</div>
-                            <div class="guide-box-desc">• Tracks structural code mutations without capturing system credentials or .env files.</div>
+                            <div class="guide-box-title">🛡️ Privacy & 24h Storage Footprint:</div>
+                            <div class="guide-box-desc">• Tracks structural code mutations without copying duplicate whole files or .env secrets.<br>• <strong>Worst-Case 24h Storage:</strong> <code>~1.5 MB to 4.5 MB / day</code> (~300 file saves). ShowLLM Cartridge: ~500 KB.</div>
                         </div>
                     </div>
                 </div>
@@ -1142,6 +1145,7 @@
                         <div class="guide-title"><span style="color: #f59e0b;">⚙️</span> Level 4: OS Kernel & File I/O Tracing</div>
                         <div class="guide-pills">
                             <span class="meta-pill cpu" style="color: #f59e0b; border-color: rgba(245,158,11,0.3);">CPU: ~1.0%</span>
+                            <span class="meta-pill storage" style="color: #f59e0b; border-color: rgba(245,158,11,0.3);">💾 24h Max: ~8 MB – 20 MB</span>
                             <span class="meta-pill privacy">🔒 File Paths & Exit Codes</span>
                             <button class="btn-dial-from-modal" onclick="setDepthLevel(4); closeLevelGuideModal();">🎛️ Dial to L4</button>
                         </div>
@@ -1152,8 +1156,8 @@
                             <div class="guide-box-desc">• Real-time file system mutations (created, modified, deleted) via FileSystemWatcher.<br>• Terminal and subprocess execution status, commands, and exit codes.<br>• Causal linking between build/compiler failures and recent code edits.</div>
                         </div>
                         <div class="guide-box">
-                            <div class="guide-box-title">🛡️ Privacy & Overhead:</div>
-                            <div class="guide-box-desc">• Monitors project directory I/O paths and terminal exit statuses. Low-latency background watcher.</div>
+                            <div class="guide-box-title">🛡️ Privacy & 24h Storage Footprint:</div>
+                            <div class="guide-box-desc">• Monitors project directory I/O paths and execution status codes.<br>• <strong>Worst-Case 24h Storage:</strong> <code>~8 MB to 20 MB / day</code> (captures ~15,000 build/npm events & build logs).</div>
                         </div>
                     </div>
                 </div>
@@ -1164,6 +1168,7 @@
                         <div class="guide-title"><span style="color: #ec4899;">👁️</span> Level 5: Multimodal Sensory Memory</div>
                         <div class="guide-pills">
                             <span class="meta-pill cpu" style="color: #ec4899; border-color: rgba(236,72,153,0.3);">CPU: ~2.5%</span>
+                            <span class="meta-pill storage" style="color: #ec4899; border-color: rgba(236,72,153,0.3);">💾 24h Max: ~85 MB – 180 MB</span>
                             <span class="meta-pill privacy">🔒 Local Perceptual Buffers</span>
                             <button class="btn-dial-from-modal" onclick="setDepthLevel(5); closeLevelGuideModal();">🎛️ Dial to L5</button>
                         </div>
@@ -1174,8 +1179,8 @@
                             <div class="guide-box-desc">• Perceptual visual keyframe thumbnails (pHash) on visual scene shifts.<br>• On-device OCR screen text extraction for non-text windows (diagrams, IDE popups).<br>• Spoken audio speech transcription buffers.</div>
                         </div>
                         <div class="guide-box">
-                            <div class="guide-box-title">🛡️ Privacy & Overhead:</div>
-                            <div class="guide-box-desc">• <strong>100% On-Device:</strong> Visual and acoustic buffers remain in local storage. Zero cloud streaming.</div>
+                            <div class="guide-box-title">🛡️ Privacy & 24h Storage Footprint:</div>
+                            <div class="guide-box-desc">• <strong>100% On-Device:</strong> Visual and acoustic buffers remain local.<br>• <strong>Worst-Case 24h Storage:</strong> <code>~85 MB to 180 MB / day</code> (<strong>100x lighter</strong> than Windows Recall's 25+ GB).</div>
                         </div>
                     </div>
                 </div>
@@ -1186,6 +1191,7 @@
                         <div class="guide-title"><span style="color: #ef4444;">🔮</span> Level 6: Counterfactual Causal Simulation</div>
                         <div class="guide-pills">
                             <span class="meta-pill cpu" style="color: #ef4444; border-color: rgba(239,68,68,0.3);">CPU: ~4.0%</span>
+                            <span class="meta-pill storage" style="color: #ef4444; border-color: rgba(239,68,68,0.3);">💾 24h Max: ~25 MB – 60 MB</span>
                             <span class="meta-pill privacy">🔒 Sovereign Temporal Sandbox</span>
                             <button class="btn-dial-from-modal" onclick="setDepthLevel(6); closeLevelGuideModal();">🎛️ Dial to L6</button>
                         </div>
@@ -1196,8 +1202,8 @@
                             <div class="guide-box-desc">• Non-destructive B-Frame branching in the spatio-temporal causal graph.<br>• Speculative What-If architectural hypotheses evaluation.<br>• <strong>Optimistic Concurrency Control (OCC):</strong> Automated collision detection across divergent timeline universes.</div>
                         </div>
                         <div class="guide-box">
-                            <div class="guide-box-title">🛡️ Privacy & Overhead:</div>
-                            <div class="guide-box-desc">• Runs in completely isolated speculative sandbox branches without mutating production state.</div>
+                            <div class="guide-box-title">🛡️ Privacy & 24h Storage Footprint:</div>
+                            <div class="guide-box-desc">• Runs in completely isolated speculative sandbox branches without mutating production state.<br>• <strong>Worst-Case 24h Storage:</strong> <code>~25 MB to 60 MB / day</code> (stores multi-universe OCC delta trees).</div>
                         </div>
                     </div>
                 </div>
@@ -1270,6 +1276,7 @@
                         </div>
                         <div class="level-meta-pills">
                             <span class="meta-pill cpu" id="lvl-cpu">CPU: ~0.5%</span>
+                            <span class="meta-pill storage" id="lvl-storage">💾 24h Max: ~1.5 MB – 4.5 MB</span>
                             <span class="meta-pill privacy" id="lvl-privacy">🔒 Code Structural Diffs Only</span>
                         </div>
                     </div>
@@ -1529,8 +1536,9 @@
                 sub: "Window titles, session timing, idle detection, process switches",
                 icon: "⏱️",
                 cpu: "CPU: < 0.1%",
+                storage: "💾 24h Max: ~10 KB – 25 KB",
                 privacy: "🔒 Ultra-Private (Zero Content)",
-                desc: "Passively tracks active window titles, process switches, and idle status with zero content capture. Negligible footprint.",
+                desc: "Passively tracks active window titles, process switches, and idle status with zero content capture. Pure state transition tuples.",
                 color: "#10b981",
                 features: [
                     { name: "Foreground App Title Polling", active: true },
@@ -1551,6 +1559,7 @@
                 sub: "Browser AI chats, Time Stone form/tab recovery, mobile voice notes",
                 icon: "💬",
                 cpu: "CPU: ~0.2%",
+                storage: "💾 24h Max: ~120 KB – 350 KB",
                 privacy: "🔒 Episodic AI Prompts & Form State",
                 desc: "Captures AI prompts and responses from Gemini/ChatGPT/Claude, browser tab states via Time Stone, and mobile voice memos.",
                 color: "#00e5ff",
@@ -1573,6 +1582,7 @@
                 sub: "Structural syntax trees, Myers code diffs, ShowLLM Cartridge Forge",
                 icon: "🧬",
                 cpu: "CPU: ~0.5%",
+                storage: "💾 24h Max: ~1.5 MB – 4.5 MB",
                 privacy: "🔒 Code Structural Diffs Only",
                 desc: "Parses Python syntax trees on file save, tracks function/class structural deltas, and compiles sovereign Movie-Codec cartridges for ShowLLM inference.",
                 color: "#10b981",
@@ -1595,6 +1605,7 @@
                 sub: "Real-time file system mutations, terminal exit codes, build tracing",
                 icon: "⚙️",
                 cpu: "CPU: ~1.0%",
+                storage: "💾 24h Max: ~8 MB – 20 MB",
                 privacy: "🔒 File I/O Paths & Process Exit Codes",
                 desc: "Monitors workspace file mutations in real-time, terminal command exit codes, and links compilation errors directly into the causal graph.",
                 color: "#f59e0b",
@@ -1617,6 +1628,7 @@
                 sub: "Perceptual visual keyframes, OCR screen diffs, audio transcripts",
                 icon: "👁️",
                 cpu: "CPU: ~2.5%",
+                storage: "💾 24h Max: ~85 MB – 180 MB",
                 privacy: "🔒 Local Perceptual Visual & Audio Buffers",
                 desc: "Maintains perceptual visual frame diffs and local speech transcripts, creating a rich sensory context graph without cloud transmission.",
                 color: "#ec4899",
@@ -1639,6 +1651,7 @@
                 sub: "B-Frames, What-If timelines, Optimistic Concurrency Control (OCC)",
                 icon: "🔮",
                 cpu: "CPU: ~4.0%",
+                storage: "💾 24h Max: ~25 MB – 60 MB",
                 privacy: "🔒 Full Sovereign Temporal Sandbox",
                 desc: "Enables non-destructive B-Frame branching, hypothetical architectural simulations, and OCC conflict resolution across divergent timelines.",
                 color: "#ef4444",
@@ -1707,6 +1720,9 @@
             document.getElementById('lvl-title').innerText = cfg.name;
             document.getElementById('lvl-sub').innerText = cfg.sub;
             document.getElementById('lvl-cpu').innerText = cfg.cpu;
+            if (document.getElementById('lvl-storage')) {
+                document.getElementById('lvl-storage').innerText = cfg.storage;
+            }
             document.getElementById('lvl-privacy').innerText = cfg.privacy;
             document.getElementById('lvl-desc').innerText = cfg.desc;
 
