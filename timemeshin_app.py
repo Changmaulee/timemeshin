@@ -543,6 +543,7 @@ def main():
     print(f"TimeMeshin Core Server active on {app_url}")
 
     # Attempt PyWebView native window if available
+    native_opened = False
     if webview is not None:
         try:
             window = webview.create_window(
@@ -556,19 +557,18 @@ def main():
                 easy_drag=False
             )
             webview.start(debug=False)
-            return
+            native_opened = True
         except Exception as e:
             print(f"Native webview init bypassed ({e}). Launching App Window...")
 
     # Dedicated Desktop App-Mode Window Fallback
-    launch_app_window(app_url)
-    
-    # Keep the server process alive
-    try:
-        while True:
-            time.sleep(1)
-    except KeyboardInterrupt:
-        pass
+    if not native_opened:
+        launch_app_window(app_url)
+        try:
+            while True:
+                time.sleep(1)
+        except KeyboardInterrupt:
+            pass
 
 if __name__ == "__main__":
     main()
