@@ -9,6 +9,13 @@ import os
 import json
 import time
 import threading
+import difflib
+import ast
+import hashlib
+import uuid
+import sqlite3
+import re
+import socket
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, Any, List
@@ -19,8 +26,16 @@ sys.path.append(str(SCRATCH_DIR))
 sys.path.append(str(SCRATCH_DIR / "timemeshin_v2"))
 
 import webview
+import win32gui
+import win32process
+import psutil
 from timemeshin_desktop_tracker import get_active_window_info, get_idle_duration_seconds, format_duration
 from timemeshin import TimeMeshinClient
+from timemeshin.cartridge import CartridgeBuilder, CartridgeDecoder
+from timemeshin.code_lineage import ASTCodeAnalyzer
+from timemeshin.kernel_tracer import FileSystemWatcher, ProcessCommandTracer
+from timemeshin.multimodal_memory import VisualFrameMemory, AudioSensoryMemory
+from timemeshin.counterfactual_engine import CounterfactualEngine
 
 # Persistent Application Data Directory
 APP_DATA_DIR = Path(os.environ.get("APPDATA", str(Path.home()))) / "TimeMeshin"
