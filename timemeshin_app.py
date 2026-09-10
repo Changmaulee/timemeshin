@@ -26,9 +26,6 @@ sys.path.append(str(SCRATCH_DIR))
 sys.path.append(str(SCRATCH_DIR / "timemeshin_v2"))
 
 import webview
-import win32gui
-import win32process
-import psutil
 from timemeshin_desktop_tracker import get_active_window_info, get_idle_duration_seconds, format_duration
 from timemeshin import TimeMeshinClient
 from timemeshin.cartridge import CartridgeBuilder, CartridgeDecoder
