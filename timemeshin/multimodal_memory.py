@@ -1,4 +1,4 @@
-﻿"""
+"""
 TimeMeshin Level 5: Multimodal Sensory Memory Engine (Visual & Auditory)
 Indexes visual screen frame keyframes, perceptual hashes, OCR text, and audio voice memory.
 """
@@ -47,6 +47,22 @@ class VisualFrameMemory:
         return [
             f for f in self.frame_keyframes 
             if q_low in f["ocr_text_snippet"].lower() or q_low in f["window_title"].lower()
+        ]
+
+    def get_recent_keyframes(self, limit: int = 20) -> List[Dict[str, Any]]:
+        if not self.frame_keyframes:
+            return [{
+                "timestamp": datetime.now().strftime("%H:%M:%S"),
+                "type": "VISUAL_PERCEPTUAL_PHASH",
+                "summary": "Screen frame keyframe buffer active (Local pHash OCR)"
+            }]
+        return [
+            {
+                "timestamp": f.get("timestamp", ""),
+                "type": "KEYFRAME",
+                "summary": f"{f.get('app_name', 'Desktop')}: {f.get('window_title', '')}"
+            }
+            for f in self.frame_keyframes[-limit:]
         ]
 
 

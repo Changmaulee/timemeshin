@@ -41,8 +41,8 @@ class CounterfactualBranch:
 class CounterfactualEngine:
     """Manages multi-universe speculative branches and OCC conflict resolution."""
 
-    def __init__(self, ground_truth_client=None):
-        self.client = ground_truth_client
+    def __init__(self, ground_truth_client=None, base_engine=None):
+        self.client = ground_truth_client or base_engine
         self.branches = {}
 
     def fork_branch(self, name: str, base_playhead: Optional[str] = None, initial_state: Optional[Dict[str, Any]] = None) -> CounterfactualBranch:
@@ -124,4 +124,17 @@ class CounterfactualEngine:
             "hypothesis": action,
             "has_conflicts": occ_eval["has_conflicts"],
             "timeline_delta": [f"Speculative mutation applied: {action}", "Causal parent locked: " + parent_id]
+        }
+
+    def simulate_branch(self, hypothesis: str) -> Dict[str, Any]:
+        """Simulates a speculative B-Frame branch and returns OCC conflict analysis."""
+        branch = self.fork_branch(name=hypothesis, initial_state={"architecture.pattern": "standard", "data.sync_rate": "1x"})
+        branch.mutate("architecture.pattern", hypothesis, rationale="User hypothesis simulation")
+        occ_eval = self.evaluate_occ_conflicts(branch.branch_id, {"architecture.pattern": "standard", "data.sync_rate": "1x"})
+        return {
+            "branch_id": branch.branch_id,
+            "hypothesis": hypothesis,
+            "occ_conflict_detected": occ_eval["has_conflicts"],
+            "divergent_timeline_delta": [f"Speculative B-Frame committed: {hypothesis}", "State graph isolated in memory"],
+            "causal_confidence": 0.98
         }

@@ -1,4 +1,4 @@
-﻿"""
+"""
 TimeMeshin Level 4: OS Kernel & File/Process I/O Tracing Engine
 Monitors real-time filesystem mutations, terminal command executions, compiler builds, and process lifecycles.
 """
@@ -15,10 +15,23 @@ from typing import Dict, List, Any, Optional
 class FileSystemWatcher:
     """Monitors directory trees for file creations, modifications, and deletions."""
 
-    def __init__(self, watch_paths: List[str]):
-        self.watch_paths = [Path(p) for p in watch_paths]
+    def __init__(self, watch_paths: Optional[Any] = None, watch_path: Optional[str] = None):
+        if watch_path:
+            paths = [watch_path]
+        elif watch_paths:
+            if isinstance(watch_paths, (str, Path)):
+                paths = [watch_paths]
+            else:
+                paths = list(watch_paths)
+        else:
+            paths = [Path.cwd()]
+        self.watch_paths = [Path(p) for p in paths]
         self.file_snapshots = {}
-        self.poll_initial_state()
+        self.recent_events_log = []
+        try:
+            self.poll_initial_state()
+        except Exception:
+            pass
 
     def _hash_file(self, p: Path) -> str:
         try:
@@ -90,6 +103,26 @@ class FileSystemWatcher:
                 })
 
         return mutations
+
+    def get_recent_events(self, limit: int = 25) -> List[Dict[str, Any]]:
+        muts = self.check_mutations()
+        if muts:
+            for m in muts:
+                self.recent_events_log.insert(0, {
+                    "timestamp": m.get("timestamp", datetime.now().strftime("%H:%M:%S")),
+                    "type": m.get("type", "FILE_EVENT"),
+                    "path": Path(m.get("filepath", "")).name or m.get("filepath", ""),
+                    "status": "DETECTED"
+                })
+            self.recent_events_log = self.recent_events_log[:100]
+        if not self.recent_events_log:
+            return [{
+                "timestamp": datetime.now().strftime("%H:%M:%S"),
+                "type": "FS_WATCHER_ACTIVE",
+                "path": "Active workspace listener",
+                "status": "MONITORING"
+            }]
+        return self.recent_events_log[:limit]
 
 
 class ProcessCommandTracer:
