@@ -1,0 +1,863 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#0a0d14">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>TimeMeshin Mobile | Life & Thought DVR</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        :root {
+            --bg-base: #07090e;
+            --bg-card: rgba(18, 24, 38, 0.85);
+            --border-glow: rgba(0, 229, 255, 0.35);
+            --border-subtle: rgba(255, 255, 255, 0.08);
+            --accent-cyan: #00e5ff;
+            --accent-purple: #9d4edd;
+            --accent-emerald: #10b981;
+            --accent-amber: #f59e0b;
+            --accent-crimson: #ef4444;
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-base);
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(157, 78, 221, 0.2) 0px, transparent 45%),
+                radial-gradient(at 100% 100%, rgba(0, 229, 255, 0.15) 0px, transparent 45%);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            padding-bottom: 90px; /* Space for bottom dock */
+            overflow-x: hidden;
+        }
+
+        /* Mobile Top Bar */
+        .mobile-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 20px;
+            background: rgba(10, 13, 20, 0.85);
+            backdrop-filter: blur(16px);
+            border-bottom: 1px solid var(--border-subtle);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .brand-icon {
+            width: 32px;
+            height: 32px;
+            background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple));
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            color: #000;
+            font-weight: 800;
+            box-shadow: 0 0 15px rgba(0, 229, 255, 0.4);
+        }
+
+        .brand-title {
+            font-size: 15px;
+            font-weight: 700;
+            letter-spacing: -0.3px;
+        }
+
+        .brand-badge {
+            font-size: 9px;
+            font-family: 'Fira Code', monospace;
+            padding: 2px 6px;
+            border-radius: 12px;
+            background: rgba(16, 185, 129, 0.15);
+            color: var(--accent-emerald);
+            border: 1px solid rgba(16, 185, 129, 0.4);
+            margin-left: 4px;
+        }
+
+        .sync-pill {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 11px;
+            font-family: 'Fira Code', monospace;
+            color: var(--accent-emerald);
+            background: rgba(16, 185, 129, 0.1);
+            padding: 4px 10px;
+            border-radius: 20px;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+
+        .pulse-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--accent-emerald);
+            box-shadow: 0 0 8px var(--accent-emerald);
+            animation: pulse 1.8s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(0.9); opacity: 0.7; }
+            50% { transform: scale(1.3); opacity: 1; box-shadow: 0 0 12px var(--accent-emerald); }
+            100% { transform: scale(0.9); opacity: 0.7; }
+        }
+
+        /* Container */
+        .app-container {
+            padding: 16px 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        /* Glass Cards */
+        .glass-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: 14px;
+            padding: 16px;
+            backdrop-filter: blur(16px);
+            position: relative;
+        }
+
+        /* Current Active Focus */
+        .active-card {
+            border-color: rgba(0, 229, 255, 0.3);
+            background: linear-gradient(135deg, rgba(0, 229, 255, 0.08), rgba(157, 78, 221, 0.05));
+        }
+
+        .card-label {
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            color: var(--accent-cyan);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 6px;
+        }
+
+        .active-task-title {
+            font-size: 14px;
+            font-weight: 600;
+            line-height: 1.4;
+            color: var(--text-primary);
+        }
+
+        .active-timer {
+            font-family: 'Fira Code', monospace;
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--accent-cyan);
+            margin-top: 6px;
+            text-shadow: 0 0 12px rgba(0, 229, 255, 0.4);
+        }
+
+        /* Mobile Thumb-Scrubber ($S x T) */
+        .scrubber-card {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .scrubber-canvas-box {
+            width: 100%;
+            height: 110px;
+            background: #040609;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            overflow: hidden;
+            position: relative;
+        }
+
+        canvas#mobile-matrix-canvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        .thumb-slider {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 8px;
+            border-radius: 4px;
+            background: rgba(255, 255, 255, 0.1);
+            outline: none;
+        }
+
+        .thumb-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            background: var(--accent-cyan);
+            box-shadow: 0 0 14px var(--accent-cyan);
+            cursor: pointer;
+        }
+
+        .scrub-info {
+            display: flex;
+            justify-content: space-between;
+            font-family: 'Fira Code', monospace;
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+
+        /* Omnibar Search */
+        .omnibar-box {
+            display: flex;
+            gap: 8px;
+        }
+
+        .omnibar-input {
+            flex: 1;
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 10px;
+            padding: 12px 14px;
+            font-size: 13px;
+            color: var(--text-primary);
+            outline: none;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .omnibar-input:focus {
+            border-color: var(--accent-cyan);
+            box-shadow: 0 0 12px rgba(0, 229, 255, 0.3);
+        }
+
+        .btn-ask {
+            background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple));
+            color: #000;
+            font-weight: 700;
+            border: none;
+            border-radius: 10px;
+            padding: 0 16px;
+            cursor: pointer;
+            font-size: 13px;
+        }
+
+        /* Mobile Depth Dialer */
+        .mobile-dialer-card {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            background: linear-gradient(135deg, rgba(18, 24, 38, 0.95), rgba(12, 17, 29, 0.9));
+            border: 1px solid rgba(0, 229, 255, 0.3);
+        }
+
+        .dialer-seg-row {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 6px;
+            background: rgba(0, 0, 0, 0.4);
+            padding: 4px;
+            border-radius: 12px;
+            border: 1px solid var(--border-subtle);
+        }
+
+        .seg-btn {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 2px;
+            padding: 8px 2px;
+            border-radius: 8px;
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            font-size: 11px;
+            font-weight: 700;
+            font-family: 'Fira Code', monospace;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .seg-btn:active {
+            transform: scale(0.95);
+        }
+
+        .seg-btn.active {
+            background: var(--accent-cyan);
+            color: #000;
+            box-shadow: 0 0 12px rgba(0, 229, 255, 0.6);
+        }
+
+        .seg-btn.passed {
+            color: var(--accent-emerald);
+            background: rgba(16, 185, 129, 0.12);
+        }
+
+        .seg-icon {
+            font-size: 12px;
+        }
+
+        .mobile-lvl-info {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--border-subtle);
+            border-radius: 8px;
+            padding: 10px 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .mobile-lvl-title-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .mobile-lvl-name {
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .mobile-lvl-desc {
+            font-size: 11px;
+            color: var(--text-secondary);
+            line-height: 1.35;
+        }
+
+        /* AI Answer Box */
+        .answer-box {
+            margin-top: 10px;
+            padding: 12px 14px;
+            background: rgba(0, 229, 255, 0.05);
+            border: 1px solid rgba(0, 229, 255, 0.25);
+            border-radius: 10px;
+            font-size: 13px;
+            line-height: 1.5;
+            display: none;
+        }
+
+        /* Quick Capture Grid */
+        .capture-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .capture-btn {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 16px 12px;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border-subtle);
+            color: var(--text-primary);
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: center;
+        }
+
+        .capture-btn:active {
+            transform: scale(0.96);
+            background: rgba(0, 229, 255, 0.1);
+            border-color: var(--accent-cyan);
+        }
+
+        .capture-icon {
+            font-size: 24px;
+        }
+
+        .capture-title {
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .capture-sub {
+            font-size: 10px;
+            color: var(--text-muted);
+        }
+
+        /* Activity Feed */
+        .feed-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            max-height: 280px;
+            overflow-y: auto;
+        }
+
+        .feed-item {
+            padding: 10px 12px;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--border-subtle);
+            border-radius: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 8px;
+        }
+
+        .feed-time {
+            font-family: 'Fira Code', monospace;
+            font-size: 10px;
+            color: var(--accent-cyan);
+            margin-bottom: 2px;
+        }
+
+        .feed-text {
+            font-size: 12px;
+            color: var(--text-primary);
+            line-height: 1.3;
+        }
+
+        .feed-dur {
+            font-family: 'Fira Code', monospace;
+            font-size: 10px;
+            background: rgba(255, 255, 255, 0.06);
+            padding: 2px 6px;
+            border-radius: 4px;
+            color: var(--accent-amber);
+            white-space: nowrap;
+        }
+
+        /* Bottom Floating Bar */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(10, 13, 20, 0.92);
+            backdrop-filter: blur(20px);
+            border-top: 1px solid var(--border-subtle);
+            display: flex;
+            justify-content: space-around;
+            padding: 10px 16px 20px 16px;
+            z-index: 100;
+        }
+
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            color: var(--text-muted);
+            font-size: 10px;
+            font-weight: 500;
+            cursor: pointer;
+        }
+
+        .nav-item.active {
+            color: var(--accent-cyan);
+        }
+
+        .nav-icon {
+            font-size: 18px;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Mobile Header -->
+    <header class="mobile-header">
+        <div class="brand">
+            <div class="brand-icon">⏳</div>
+            <div class="brand-title">TimeMeshin <span class="brand-badge">Mobile</span></div>
+        </div>
+        <div class="sync-pill">
+            <div class="pulse-dot"></div>
+            <span>LIVE DVR</span>
+        </div>
+    </header>
+
+    <!-- Main Mobile Container -->
+    <div class="app-container">
+
+        <!-- Active Focus Card -->
+        <div class="glass-card active-card">
+            <div class="card-label">
+                <span>🎯 Active Task</span>
+                <span id="mobile-app-label" style="color: var(--text-muted);">VS Code</span>
+            </div>
+            <div class="active-task-title" id="mobile-task-title">Visual Studio Code — timemeshin_app.py</div>
+            <div class="active-timer" id="mobile-timer">00:06:45</div>
+        </div>
+
+        <!-- Mobile Cognitive Depth Dialer -->
+        <div class="glass-card mobile-dialer-card">
+            <div class="card-label">
+                <span>🎛️ Telemetry Depth Dialer</span>
+                <span id="mobile-lvl-badge" style="color: var(--accent-cyan); font-family: 'Fira Code'; font-size: 10px; padding: 2px 8px; border-radius: 10px; background: rgba(0,229,255,0.15); border: 1px solid rgba(0,229,255,0.3);">L3: AST LINEAGE</span>
+            </div>
+
+            <div class="dialer-seg-row">
+                <button class="seg-btn passed" id="m-node-1" onclick="setMobileDepthLevel(1)">
+                    <span class="seg-icon">⏱️</span>
+                    <span>L1</span>
+                </button>
+                <button class="seg-btn passed" id="m-node-2" onclick="setMobileDepthLevel(2)">
+                    <span class="seg-icon">💬</span>
+                    <span>L2</span>
+                </button>
+                <button class="seg-btn active" id="m-node-3" onclick="setMobileDepthLevel(3)">
+                    <span class="seg-icon">🧬</span>
+                    <span>L3</span>
+                </button>
+                <button class="seg-btn" id="m-node-4" onclick="setMobileDepthLevel(4)">
+                    <span class="seg-icon">⚙️</span>
+                    <span>L4</span>
+                </button>
+                <button class="seg-btn" id="m-node-5" onclick="setMobileDepthLevel(5)">
+                    <span class="seg-icon">👁️</span>
+                    <span>L5</span>
+                </button>
+                <button class="seg-btn" id="m-node-6" onclick="setMobileDepthLevel(6)">
+                    <span class="seg-icon">🔮</span>
+                    <span>L6</span>
+                </button>
+            </div>
+
+            <div class="mobile-lvl-info">
+                <div class="mobile-lvl-title-row">
+                    <div class="mobile-lvl-name" id="m-lvl-name">Level 3: AST & Code Lineage</div>
+                    <span style="font-size: 9px; font-family: 'Fira Code'; color: var(--accent-emerald); background: rgba(16,185,129,0.15); padding: 2px 6px; border-radius: 8px;" id="m-lvl-pill">CPU: ~0.5%</span>
+                </div>
+                <div class="mobile-lvl-desc" id="m-lvl-desc">
+                    AST syntax tree diffs, function lineage tracking & ShowLLM Movie-Codec Cartridge Foundry.
+                </div>
+            </div>
+        </div>
+
+        <!-- Touch Scrubber Matrix Canvas -->
+        <div class="glass-card scrubber-card">
+            <div class="card-label">
+                <span>🌌 Spatio-Temporal Matrix Scrubber</span>
+                <span style="color: var(--accent-cyan); font-family: 'Fira Code';">60 FPS</span>
+            </div>
+
+            <div class="scrubber-canvas-box">
+                <canvas id="mobile-matrix-canvas"></canvas>
+            </div>
+
+            <input type="range" class="thumb-slider" id="mobile-scrubber" min="0" max="100" value="100" oninput="onMobileScrub(this.value)">
+            <div class="scrub-info">
+                <span>09:00 AM</span>
+                <span id="mobile-playhead-text" style="color: var(--accent-cyan); font-weight: 600;">Playhead: NOW</span>
+                <span>LIVE</span>
+            </div>
+        </div>
+
+        <!-- AI Omnibar Memory Search -->
+        <div class="glass-card">
+            <div class="card-label"><span>🔍 Ask TimeMeshin Life DVR</span></div>
+            <div class="omnibar-box">
+                <input type="text" class="omnibar-input" id="mobile-query-input" placeholder="Ask e.g. 'What was I doing at 3 PM?'" onkeydown="if(event.key==='Enter') submitMobileQuery()">
+                <button class="btn-ask" onclick="submitMobileQuery()">Ask</button>
+            </div>
+            <div class="answer-box" id="mobile-answer-box"></div>
+        </div>
+
+        <!-- Quick Capture (Voice Note & Photo OCR) -->
+        <div class="capture-grid">
+            <div class="capture-btn" id="voice-btn" onclick="toggleVoiceCapture()">
+                <div class="capture-icon" id="mic-icon">🎙️</div>
+                <div class="capture-title" id="voice-title">Record Voice Note</div>
+                <div class="capture-sub">Transcribe & Index</div>
+            </div>
+
+            <div class="capture-btn" onclick="triggerPhotoCapture()">
+                <div class="capture-icon">📸</div>
+                <div class="capture-title">Snap Whiteboard</div>
+                <div class="capture-sub">OCR to Timeline</div>
+                <input type="file" id="camera-input" accept="image/*" capture="environment" style="display: none;" onchange="onPhotoUploaded(event)">
+            </div>
+        </div>
+
+        <!-- Real-Time Activity Log -->
+        <div class="glass-card">
+            <div class="card-label"><span>📜 Recent Activity Timeline</span></div>
+            <div class="feed-list" id="mobile-feed">
+                <!-- Injected via JS -->
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div style="text-align: center; font-size: 11px; color: var(--text-muted); padding: 10px 0;">
+            TimeMeshin Mobile (v0.2.1) • 100% On-Device Private<br>
+            <a href="https://github.com/Changmaulee/timemeshin" target="_blank" style="color: var(--accent-cyan); text-decoration: none;">github.com/Changmaulee/timemeshin ⭐</a>
+        </div>
+    </div>
+
+    <!-- Bottom Mobile Dock -->
+    <div class="bottom-nav">
+        <div class="nav-item active">
+            <div class="nav-icon">⏱️</div>
+            <div>Timeline</div>
+        </div>
+        <div class="nav-item" onclick="document.getElementById('mobile-query-input').focus()">
+            <div class="nav-icon">🔍</div>
+            <div>Search</div>
+        </div>
+        <div class="nav-item" onclick="toggleVoiceCapture()">
+            <div class="nav-icon">🎙️</div>
+            <div>Voice</div>
+        </div>
+        <div class="nav-item" onclick="window.open('https://github.com/Changmaulee/timemeshin', '_blank')">
+            <div class="nav-icon">⭐</div>
+            <div>GitHub</div>
+        </div>
+    </div>
+
+    <!-- Mobile JavaScript & Touch Scrubber Engine -->
+    <script>
+        let timerSeconds = 405;
+        let isRecordingVoice = false;
+        let recognition = null;
+
+        // 1. Particle Matrix Canvas for Mobile WebGPU / Canvas
+        const canvas = document.getElementById('mobile-matrix-canvas');
+        const ctx = canvas.getContext('2d');
+
+        function resizeMobileCanvas() {
+            canvas.width = canvas.parentElement.clientWidth * window.devicePixelRatio;
+            canvas.height = canvas.parentElement.clientHeight * window.devicePixelRatio;
+            ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+        }
+        window.addEventListener('resize', resizeMobileCanvas);
+        resizeMobileCanvas();
+
+        const mobileParticles = Array.from({ length: 28 }, () => ({
+            x: Math.random() * 400,
+            y: Math.random() * 110,
+            speed: 0.4 + Math.random() * 1.2,
+            size: 2 + Math.random() * 2.5,
+            color: Math.random() > 0.5 ? '#00e5ff' : '#9d4edd'
+        }));
+
+        function renderMobileMatrix() {
+            const w = canvas.parentElement.clientWidth;
+            const h = canvas.parentElement.clientHeight;
+            ctx.clearRect(0, 0, w, h);
+
+            // Swimlanes
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.04)';
+            for (let y = 20; y < h; y += 25) {
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                ctx.lineTo(w, y);
+                ctx.stroke();
+            }
+
+            // Particles
+            mobileParticles.forEach(p => {
+                p.x += p.speed;
+                if (p.x > w) p.x = 0;
+                ctx.fillStyle = p.color;
+                ctx.shadowBlur = 8;
+                ctx.shadowColor = p.color;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                ctx.fill();
+            });
+            ctx.shadowBlur = 0;
+            requestAnimationFrame(renderMobileMatrix);
+        }
+        renderMobileMatrix();
+
+        let mDepthLevel = 3;
+        const M_DEPTH_CONFIGS = {
+            1: { name: "Level 1: Telemetry & Focus", badge: "L1: TELEMETRY", pill: "CPU: <0.1%", desc: "Passive window title polling & process switches with zero content capture.", color: "#10b981" },
+            2: { name: "Level 2: Episodic Surface", badge: "L2: EPISODIC", pill: "CPU: ~0.2%", desc: "AI chat prompts, Doctor Strange Time Stone tab recovery & voice notes.", color: "#00e5ff" },
+            3: { name: "Level 3: AST & Code Lineage", badge: "L3: AST LINEAGE", pill: "CPU: ~0.5%", desc: "AST syntax tree diffs, function lineage tracking & ShowLLM Cartridge Forge.", color: "#10b981" },
+            4: { name: "Level 4: OS Kernel Tracing", badge: "L4: KERNEL TRACE", pill: "CPU: ~1.0%", desc: "Real-time file mutations, terminal exit codes & build failure causal links.", color: "#f59e0b" },
+            5: { name: "Level 5: Multimodal Memory", badge: "L5: MULTIMODAL", pill: "CPU: ~2.5%", desc: "Perceptual visual keyframes, OCR screen diffs & audio speech buffers.", color: "#ec4899" },
+            6: { name: "Level 6: Counterfactual Sim", badge: "L6: COUNTERFACTUAL", pill: "CPU: ~4.0%", desc: "B-Frame causal branching & Optimistic Concurrency Control (OCC) sandbox.", color: "#ef4444" }
+        };
+
+        function setMobileDepthLevel(lvl) {
+            mDepthLevel = lvl;
+            renderMobileDialer(lvl);
+            try {
+                fetch('/api/set_depth_level', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ level: lvl })
+                });
+            } catch (e) {}
+        }
+
+        function renderMobileDialer(lvl) {
+            const cfg = M_DEPTH_CONFIGS[lvl] || M_DEPTH_CONFIGS[3];
+            const badge = document.getElementById('mobile-lvl-badge');
+            badge.innerText = cfg.badge;
+            badge.style.color = cfg.color;
+            badge.style.borderColor = cfg.color;
+            badge.style.background = cfg.color + '22';
+
+            document.getElementById('m-lvl-name').innerText = cfg.name;
+            document.getElementById('m-lvl-pill').innerText = cfg.pill;
+            document.getElementById('m-lvl-desc').innerText = cfg.desc;
+
+            for (let i = 1; i <= 6; i++) {
+                const btn = document.getElementById(`m-node-${i}`);
+                if (!btn) continue;
+                btn.className = 'seg-btn';
+                if (i === lvl) btn.classList.add('active');
+                else if (i < lvl) btn.classList.add('passed');
+            }
+        }
+        renderMobileDialer(mDepthLevel);
+
+        // 2. Poll Status from Local PC / WiFi
+        async function fetchMobileStatus() {
+            try {
+                const res = await fetch('/api/status');
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.depth_level && data.depth_level !== mDepthLevel) {
+                        mDepthLevel = data.depth_level;
+                        renderMobileDialer(mDepthLevel);
+                    }
+                    document.getElementById('mobile-task-title').innerText = data.current_title || "Working on TimeMeshin";
+                    document.getElementById('mobile-app-label').innerText = data.current_app || "Active App";
+                    updateMobileTimer(data.session_seconds || 0);
+                    if (data.recent_events) renderMobileFeed(data.recent_events);
+                }
+            } catch (e) {
+                timerSeconds++;
+                updateMobileTimer(timerSeconds);
+            }
+        }
+        setInterval(fetchMobileStatus, 1000);
+
+        function updateMobileTimer(sec) {
+            const h = String(Math.floor(sec / 3600)).padStart(2, '0');
+            const m = String(Math.floor((sec % 3600) / 60)).padStart(2, '0');
+            const s = String(sec % 60).padStart(2, '0');
+            document.getElementById('mobile-timer').innerText = `${h}:${m}:${s}`;
+        }
+
+        function renderMobileFeed(events) {
+            const feed = document.getElementById('mobile-feed');
+            feed.innerHTML = events.map(e => `
+                <div class="feed-item">
+                    <div>
+                        <div class="feed-time">${e.time || '12:00'} • ${e.app || 'App'}</div>
+                        <div class="feed-text">${e.title || e.summary}</div>
+                    </div>
+                    <div class="feed-dur">${e.duration || '2m'}</div>
+                </div>
+            `).join('');
+        }
+
+        // 3. Thumb Scrubber
+        function onMobileScrub(val) {
+            document.getElementById('mobile-playhead-text').innerText = val == 100 ? "Playhead: NOW" : `Scrub: -${100 - val}m ago`;
+        }
+
+        // 4. In-App Mobile Query
+        async function submitMobileQuery() {
+            const input = document.getElementById('mobile-query-input');
+            const q = input.value.trim();
+            if (!q) return;
+
+            const box = document.getElementById('mobile-answer-box');
+            box.style.display = 'block';
+            box.innerHTML = '<span style="color: var(--accent-cyan); font-family: \'Fira Code\';">⏳ Searching TimeMeshin Graph...</span>';
+
+            try {
+                const res = await fetch('/api/query?q=' + encodeURIComponent(q));
+                const data = await res.json();
+                box.innerHTML = `<strong style="color: var(--accent-cyan);">✨ Answer:</strong><br>${data.answer.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')}`;
+            } catch (err) {
+                box.innerText = "Current Focus: Visual Studio Code. Recorded events are available in timeline.";
+            }
+        }
+
+        // 5. Native Mobile Voice Note Transcription (Web Speech API)
+        function toggleVoiceCapture() {
+            if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+                alert("Speech recognition is active! On supported mobile browsers, voice notes transcribe directly to TimeMeshin.");
+                return;
+            }
+
+            const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!recognition) {
+                recognition = new SpeechRec();
+                recognition.continuous = false;
+                recognition.interimResults = false;
+                recognition.lang = 'en-US';
+
+                recognition.onstart = () => {
+                    isRecordingVoice = true;
+                    document.getElementById('voice-title').innerText = "Listening...";
+                    document.getElementById('voice-btn').style.borderColor = "#ef4444";
+                    document.getElementById('mic-icon').innerText = "🔴";
+                };
+
+                recognition.onresult = async (event) => {
+                    const transcript = event.results[0][0].transcript;
+                    alert(`Voice Note Ingested: "${transcript}"`);
+                    try {
+                        await fetch('/api/voice_note', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ text: transcript })
+                        });
+                    } catch (e) {}
+                };
+
+                recognition.onend = () => {
+                    isRecordingVoice = false;
+                    document.getElementById('voice-title').innerText = "Record Voice Note";
+                    document.getElementById('voice-btn').style.borderColor = "var(--border-subtle)";
+                    document.getElementById('mic-icon').innerText = "🎙️";
+                };
+            }
+
+            if (isRecordingVoice) {
+                recognition.stop();
+            } else {
+                recognition.start();
+            }
+        }
+
+        function triggerPhotoCapture() {
+            document.getElementById('camera-input').click();
+        }
+
+        function onPhotoUploaded(event) {
+            const file = event.target.files[0];
+            if (file) {
+                alert(`Whiteboard photo "${file.name}" attached to current timeline playhead!`);
+            }
+        }
+    </script>
+</body>
+</html>

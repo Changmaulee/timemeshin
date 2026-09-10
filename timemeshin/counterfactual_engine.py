@@ -1,4 +1,4 @@
-﻿"""
+"""
 TimeMeshin Level 6: Counterfactual Causal Simulation Engine (B-Frames & OCC)
 Enables speculative 'what-if' architectural branching with Optimistic Concurrency Control.
 """
@@ -111,4 +111,17 @@ class CounterfactualEngine:
             "base_state": base_state,
             "projected_state": branch.state_snapshot,
             "simulated_deltas": branch.speculative_deltas
+        }
+
+    def simulate_what_if(self, parent_id: str, mutation_spec: Dict[str, Any], expected_conflict_keys: Optional[List[str]] = None) -> Dict[str, Any]:
+        """Convenience method for high-level counterfactual simulation."""
+        action = mutation_spec.get("action", "Hypothesis Branch")
+        branch = self.fork_branch(name=action, initial_state={"architecture.pattern": "standard", "data.sync_rate": "1x"})
+        branch.mutate("architecture.pattern", action, rationale="Counterfactual simulation")
+        occ_eval = self.evaluate_occ_conflicts(branch.branch_id, {"architecture.pattern": "standard", "data.sync_rate": "1x"})
+        return {
+            "branch_id": branch.branch_id,
+            "hypothesis": action,
+            "has_conflicts": occ_eval["has_conflicts"],
+            "timeline_delta": [f"Speculative mutation applied: {action}", "Causal parent locked: " + parent_id]
         }

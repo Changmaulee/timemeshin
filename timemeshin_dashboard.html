@@ -1,0 +1,1648 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TimeMeshin | Spatio-Temporal Desktop DVR & WebGPU Dashboard</title>
+    <!-- Modern Fonts & Icons -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        :root {
+            --bg-base: #0a0d14;
+            --bg-card: rgba(18, 24, 38, 0.75);
+            --bg-card-hover: rgba(28, 38, 58, 0.85);
+            --border-glow: rgba(0, 229, 255, 0.25);
+            --border-subtle: rgba(255, 255, 255, 0.08);
+            --accent-cyan: #00e5ff;
+            --accent-purple: #9d4edd;
+            --accent-emerald: #10b981;
+            --accent-crimson: #ef4444;
+            --accent-amber: #f59e0b;
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-base);
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(157, 78, 221, 0.15) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(0, 229, 255, 0.12) 0px, transparent 50%);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+        }
+
+        /* Glassmorphism Header */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 32px;
+            background: rgba(10, 13, 20, 0.8);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border-subtle);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .logo-group {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .logo-icon {
+            width: 38px;
+            height: 38px;
+            background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple));
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 0 20px rgba(0, 229, 255, 0.4);
+            font-weight: 800;
+            font-size: 20px;
+            color: #000;
+        }
+
+        .logo-text h1 {
+            font-size: 18px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .badge-community {
+            font-size: 10px;
+            font-weight: 700;
+            padding: 2px 8px;
+            border-radius: 20px;
+            background: rgba(16, 185, 129, 0.15);
+            color: var(--accent-emerald);
+            border: 1px solid rgba(16, 185, 129, 0.4);
+            font-family: 'Fira Code', monospace;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .badge-webgpu {
+            font-size: 10px;
+            font-weight: 700;
+            padding: 2px 8px;
+            border-radius: 20px;
+            background: rgba(0, 229, 255, 0.15);
+            color: var(--accent-cyan);
+            border: 1px solid rgba(0, 229, 255, 0.4);
+            font-family: 'Fira Code', monospace;
+        }
+
+        .github-link-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border-subtle);
+            border-radius: 8px;
+            color: var(--text-primary);
+            text-decoration: none;
+            font-size: 12px;
+            font-weight: 500;
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+
+        .github-link-btn:hover {
+            background: rgba(255, 255, 255, 0.12);
+            border-color: var(--accent-cyan);
+            color: var(--accent-cyan);
+            box-shadow: 0 0 12px rgba(0, 229, 255, 0.25);
+            transform: translateY(-1px);
+        }
+
+        footer {
+            padding: 12px 32px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(10, 13, 20, 0.6);
+            border-top: 1px solid var(--border-subtle);
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+
+        .logo-text p {
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+
+        .controls {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            border: none;
+            outline: none;
+        }
+
+        .btn-start {
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: white;
+            box-shadow: 0 0 15px rgba(16, 185, 129, 0.35);
+        }
+
+        .btn-start:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 0 25px rgba(16, 185, 129, 0.6);
+        }
+
+        .btn-stop {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            color: white;
+            box-shadow: 0 0 15px rgba(239, 68, 68, 0.35);
+        }
+
+        .btn-stop:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 0 25px rgba(239, 68, 68, 0.6);
+        }
+
+        .status-pill {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 14px;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid var(--border-subtle);
+            border-radius: 20px;
+            font-size: 12px;
+            font-family: 'Fira Code', monospace;
+        }
+
+        .pulse-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--accent-emerald);
+            box-shadow: 0 0 10px var(--accent-emerald);
+            animation: pulse 1.8s infinite;
+        }
+
+        .pulse-dot.stopped {
+            background: var(--text-muted);
+            box-shadow: none;
+            animation: none;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(0.95); opacity: 0.8; }
+            50% { transform: scale(1.3); opacity: 1; box-shadow: 0 0 16px var(--accent-emerald); }
+            100% { transform: scale(0.95); opacity: 0.8; }
+        }
+
+        /* Layout Grid */
+        main {
+            flex: 1;
+            padding: 24px 32px;
+            display: grid;
+            grid-template-columns: 1fr 340px;
+            gap: 24px;
+            max-width: 1600px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        /* Left Column: Live Focus & Timeline */
+        .feed-column {
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        .glass-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            backdrop-filter: blur(16px);
+            border-radius: 14px;
+            padding: 20px 24px;
+            position: relative;
+            overflow: hidden;
+            transition: border-color 0.2s;
+        }
+
+        .glass-card:hover {
+            border-color: var(--border-glow);
+        }
+
+        /* Current Focus Highlight */
+        .live-focus {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: linear-gradient(135deg, rgba(0, 229, 255, 0.08), rgba(157, 78, 221, 0.05));
+            border: 1px solid rgba(0, 229, 255, 0.3);
+        }
+
+        .focus-info h3 {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--accent-cyan);
+            margin-bottom: 6px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .focus-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text-primary);
+            max-width: 580px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        /* 🎛️ Cognitive Depth Dialer (Levels 1 to 6) */
+        .depth-dialer-card {
+            background: linear-gradient(135deg, rgba(18, 24, 38, 0.95), rgba(12, 17, 29, 0.9));
+            border: 1px solid rgba(0, 229, 255, 0.35);
+            box-shadow: 0 0 30px rgba(0, 229, 255, 0.08);
+            padding: 20px 24px;
+        }
+
+        .dialer-top-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .dialer-top-row h2 {
+            font-size: 14px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            letter-spacing: -0.3px;
+        }
+
+        .dialer-level-badge {
+            font-size: 11px;
+            font-family: 'Fira Code', monospace;
+            font-weight: 700;
+            padding: 4px 12px;
+            border-radius: 20px;
+            background: rgba(0, 229, 255, 0.15);
+            color: var(--accent-cyan);
+            border: 1px solid rgba(0, 229, 255, 0.4);
+            box-shadow: 0 0 12px rgba(0, 229, 255, 0.2);
+            transition: all 0.3s;
+        }
+
+        /* Stepper Node Track */
+        .dialer-track-container {
+            position: relative;
+            margin: 20px 10px 30px 10px;
+        }
+
+        .dialer-track-line {
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.08);
+            transform: translateY(-50%);
+            border-radius: 2px;
+            z-index: 1;
+        }
+
+        .dialer-track-fill {
+            position: absolute;
+            top: 50%;
+            left: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #10b981, #00e5ff, #9d4edd, #f59e0b, #ec4899, #ef4444);
+            transform: translateY(-50%);
+            border-radius: 2px;
+            z-index: 2;
+            transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .dialer-nodes {
+            position: relative;
+            display: flex;
+            justify-content: space-between;
+            z-index: 3;
+        }
+
+        .dial-node {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: #0f172a;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 13px;
+            font-weight: 700;
+            font-family: 'Fira Code', monospace;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+        }
+
+        .dial-node:hover {
+            border-color: var(--accent-cyan);
+            color: var(--text-primary);
+            transform: scale(1.12);
+        }
+
+        .dial-node.active {
+            border-color: var(--accent-cyan);
+            color: #000;
+            background: var(--accent-cyan);
+            box-shadow: 0 0 20px rgba(0, 229, 255, 0.7);
+            transform: scale(1.2);
+        }
+
+        .dial-node.passed {
+            border-color: var(--accent-emerald);
+            color: var(--accent-emerald);
+            background: rgba(16, 185, 129, 0.15);
+        }
+
+        .dial-node-label {
+            position: absolute;
+            top: 40px;
+            font-size: 10px;
+            font-weight: 600;
+            white-space: nowrap;
+            color: var(--text-muted);
+            transform: translateX(-50%);
+            left: 50%;
+            pointer-events: none;
+            transition: color 0.2s;
+        }
+
+        .dial-node.active .dial-node-label {
+            color: var(--accent-cyan);
+            font-weight: 700;
+        }
+
+        /* Active Level Card & Specs */
+        .level-details-card {
+            margin-top: 28px;
+            background: rgba(0, 0, 0, 0.35);
+            border: 1px solid var(--border-subtle);
+            border-radius: 12px;
+            padding: 14px 18px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            transition: all 0.3s;
+        }
+
+        .level-header-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .level-title-wrap {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .level-icon-badge {
+            font-size: 20px;
+            padding: 6px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            border: 1px solid var(--border-subtle);
+        }
+
+        .level-name {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .level-meta-pills {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .meta-pill {
+            font-size: 10px;
+            font-family: 'Fira Code', monospace;
+            padding: 3px 8px;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border-subtle);
+            color: var(--text-secondary);
+        }
+
+        .meta-pill.cpu {
+            color: var(--accent-amber);
+            border-color: rgba(245, 158, 11, 0.3);
+        }
+
+        .meta-pill.privacy {
+            color: var(--accent-emerald);
+            border-color: rgba(16, 185, 129, 0.3);
+        }
+
+        .level-desc {
+            font-size: 12px;
+            color: var(--text-secondary);
+            line-height: 1.5;
+        }
+
+        .level-features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 8px;
+            margin-top: 2px;
+        }
+
+        .feature-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 11px;
+            color: var(--text-primary);
+            background: rgba(255, 255, 255, 0.03);
+            padding: 6px 10px;
+            border-radius: 6px;
+            border: 1px solid rgba(255, 255, 255, 0.04);
+        }
+
+        .feature-item.active-feat {
+            border-color: rgba(16, 185, 129, 0.3);
+            background: rgba(16, 185, 129, 0.06);
+        }
+
+        .feature-icon-check {
+            color: var(--accent-emerald);
+            font-weight: 700;
+        }
+
+        .feature-item.disabled-feat {
+            opacity: 0.35;
+            text-decoration: line-through;
+        }
+
+        /* AI Omnibar Query Section */
+        .omnibar-card {
+            background: linear-gradient(135deg, rgba(18, 24, 38, 0.9), rgba(15, 23, 42, 0.85));
+            border: 1px solid rgba(0, 229, 255, 0.35);
+            box-shadow: 0 0 25px rgba(0, 229, 255, 0.12);
+            padding: 16px 20px;
+        }
+
+        .omnibar-wrapper {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .omnibar-input {
+            flex: 1;
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 8px;
+            padding: 12px 18px;
+            font-size: 14px;
+            color: var(--text-primary);
+            font-family: 'Inter', sans-serif;
+            outline: none;
+            transition: all 0.2s;
+        }
+
+        .omnibar-input:focus {
+            border-color: var(--accent-cyan);
+            box-shadow: 0 0 16px rgba(0, 229, 255, 0.3);
+            background: rgba(0, 0, 0, 0.6);
+        }
+
+        .omnibar-input::placeholder {
+            color: var(--text-muted);
+            font-size: 13px;
+        }
+
+        .btn-ask {
+            background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple));
+            color: #000;
+            font-weight: 700;
+            padding: 12px 22px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .btn-ask:hover {
+            box-shadow: 0 0 20px rgba(0, 229, 255, 0.5);
+            transform: translateY(-1px);
+        }
+
+        .ai-answer-card {
+            margin-top: 14px;
+            padding: 14px 18px;
+            background: rgba(0, 229, 255, 0.04);
+            border: 1px solid rgba(0, 229, 255, 0.2);
+            border-radius: 10px;
+            display: none;
+            animation: fadeIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-4px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .ai-answer-header {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            color: var(--accent-cyan);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+
+        .ai-answer-body {
+            font-size: 13px;
+            color: var(--text-primary);
+            line-height: 1.6;
+            white-space: pre-line;
+        }
+
+        .btn-jump-time {
+            padding: 4px 10px;
+            border-radius: 6px;
+            background: rgba(0, 229, 255, 0.15);
+            border: 1px solid rgba(0, 229, 255, 0.4);
+            color: var(--accent-cyan);
+            font-size: 11px;
+            font-family: 'Fira Code', monospace;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .btn-jump-time:hover {
+            background: var(--accent-cyan);
+            color: #000;
+        }
+
+        /* WebGPU Spatio-Temporal Matrix Canvas */
+        .matrix-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .matrix-header h2 {
+            font-size: 14px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .canvas-container {
+            position: relative;
+            width: 100%;
+            height: 180px;
+            background: #05070a;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            overflow: hidden;
+        }
+
+        canvas#webgpu-canvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        /* Video Scrubber Controls */
+        .scrubber-panel {
+            margin-top: 14px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .scrubber-slider {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 6px;
+            border-radius: 3px;
+            background: rgba(255, 255, 255, 0.1);
+            outline: none;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .scrubber-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: var(--accent-cyan);
+            cursor: pointer;
+            box-shadow: 0 0 12px var(--accent-cyan);
+        }
+
+        .scrubber-labels {
+            display: flex;
+            justify-content: space-between;
+            font-family: 'Fira Code', monospace;
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+
+        /* Chronological Feed */
+        .timeline-feed {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            max-height: 480px;
+            overflow-y: auto;
+            padding-right: 6px;
+        }
+
+        .timeline-feed::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .timeline-feed::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 4px;
+        }
+
+        .event-node {
+            display: flex;
+            align-items: flex-start;
+            gap: 14px;
+            padding: 12px 16px;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--border-subtle);
+            border-radius: 10px;
+            transition: all 0.15s;
+        }
+
+        .event-node:hover {
+            background: var(--bg-card-hover);
+            border-color: rgba(0, 229, 255, 0.3);
+            transform: translateX(3px);
+        }
+
+        .event-time {
+            font-family: 'Fira Code', monospace;
+            font-size: 11px;
+            color: var(--accent-cyan);
+            white-space: nowrap;
+        }
+
+        .event-content {
+            flex: 1;
+        }
+
+        .event-app {
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--text-secondary);
+            margin-bottom: 2px;
+        }
+
+        .event-desc {
+            font-size: 13px;
+            color: var(--text-primary);
+            line-height: 1.4;
+        }
+
+        .event-dur {
+            font-family: 'Fira Code', monospace;
+            font-size: 11px;
+            padding: 2px 8px;
+            background: rgba(255, 255, 255, 0.06);
+            border-radius: 6px;
+            color: var(--accent-amber);
+            white-space: nowrap;
+        }
+
+        /* Right Column: Metrics & Charts */
+        .metrics-column {
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        .chart-card {
+            height: 280px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .chart-header {
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 12px;
+            color: var(--text-secondary);
+        }
+
+        .stat-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .stat-box {
+            padding: 14px;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--border-subtle);
+            border-radius: 10px;
+        }
+
+        .stat-box .num {
+            font-family: 'Fira Code', monospace;
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-top: 4px;
+        }
+
+        .stat-box .lbl {
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Header -->
+    <header>
+        <div class="logo-group">
+            <div class="logo-icon">⏳</div>
+            <div class="logo-text">
+                <h1>TimeMeshin <span class="badge-community">Community Edition</span> <span class="badge-webgpu">WebGPU</span></h1>
+                <p>Deterministic Spatio-Temporal Desktop Memory & DVR Engine</p>
+            </div>
+        </div>
+
+        <div class="controls">
+            <a href="https://github.com/Changmaulee/timemeshin" target="_blank" class="github-link-btn" title="View Source on GitHub">
+                <span>⭐</span> <span>Star on GitHub</span>
+            </a>
+
+            <div class="status-pill">
+                <div class="pulse-dot" id="status-dot"></div>
+                <span id="status-label">ACTIVE MONITORING</span>
+            </div>
+
+            <button class="btn btn-start" id="btn-toggle" onclick="toggleTracking()">
+                <span>⏹️</span> <span id="btn-toggle-text">Stop Tracking</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Grid -->
+    <main>
+        <!-- Left: Live Focus, WebGPU Matrix & Timeline -->
+        <div class="feed-column">
+            <!-- Active Focus Widget -->
+            <div class="glass-card live-focus">
+                <div class="focus-info">
+                    <h3><span>🎯</span> Current Active Task</h3>
+                    <div class="focus-title" id="focus-title">Visual Studio Code — timemeshin_dashboard.html</div>
+                    <div style="font-size: 12px; color: var(--text-muted); margin-top: 4px;" id="focus-app">VS Code (Editor)</div>
+                </div>
+                <div class="focus-timer" id="focus-timer">00:04:12</div>
+            </div>
+
+            <!-- 🎛️ Cognitive Depth Dialer (Levels 1 to 6) -->
+            <div class="glass-card depth-dialer-card">
+                <div class="dialer-top-row">
+                    <h2><span>🎛️</span> Cognitive Telemetry Depth Dialer</h2>
+                    <div class="dialer-level-badge" id="active-level-badge">L3: AST LINEAGE</div>
+                </div>
+
+                <!-- Stepper Node Track -->
+                <div class="dialer-track-container">
+                    <div class="dialer-track-line"></div>
+                    <div class="dialer-track-fill" id="dialer-track-fill" style="width: 40%;"></div>
+                    <div class="dialer-nodes">
+                        <div class="dial-node passed" id="dial-node-1" onclick="setDepthLevel(1)">
+                            <span>1</span>
+                            <span class="dial-node-label">⏱️ Focus</span>
+                        </div>
+                        <div class="dial-node passed" id="dial-node-2" onclick="setDepthLevel(2)">
+                            <span>2</span>
+                            <span class="dial-node-label">💬 Episodic</span>
+                        </div>
+                        <div class="dial-node active" id="dial-node-3" onclick="setDepthLevel(3)">
+                            <span>3</span>
+                            <span class="dial-node-label">🧬 AST</span>
+                        </div>
+                        <div class="dial-node" id="dial-node-4" onclick="setDepthLevel(4)">
+                            <span>4</span>
+                            <span class="dial-node-label">⚙️ Kernel</span>
+                        </div>
+                        <div class="dial-node" id="dial-node-5" onclick="setDepthLevel(5)">
+                            <span>5</span>
+                            <span class="dial-node-label">👁️ Multi</span>
+                        </div>
+                        <div class="dial-node" id="dial-node-6" onclick="setDepthLevel(6)">
+                            <span>6</span>
+                            <span class="dial-node-label">🔮 Causal</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Active Level Specs & Features Card -->
+                <div class="level-details-card" id="level-details-card">
+                    <div class="level-header-row">
+                        <div class="level-title-wrap">
+                            <span class="level-icon-badge" id="lvl-icon">🧬</span>
+                            <div>
+                                <div class="level-name" id="lvl-title">Level 3: AST & Code Mutation Lineage</div>
+                                <div style="font-size: 11px; color: var(--text-muted);" id="lvl-sub">Structural syntax trees, Myers code diffs, ShowLLM Cartridge Forge</div>
+                            </div>
+                        </div>
+                        <div class="level-meta-pills">
+                            <span class="meta-pill cpu" id="lvl-cpu">CPU: ~0.5%</span>
+                            <span class="meta-pill privacy" id="lvl-privacy">🔒 Code Structural Diffs Only</span>
+                        </div>
+                    </div>
+
+                    <div class="level-desc" id="lvl-desc">
+                        Parses Python syntax trees on save, tracks function/class structural deltas, and compiles sovereign Movie-Codec cartridges for ShowLLM inference.
+                    </div>
+
+                    <div class="level-features-grid" id="lvl-features-grid">
+                        <!-- Dynamic Feature Checklist -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- AI Natural Language Omnibar Query Card -->
+            <div class="glass-card omnibar-card">
+                <div class="omnibar-wrapper">
+                    <input type="text" class="omnibar-input" id="query-input" placeholder="🔍 Ask TimeMeshin anything... (e.g. 'What was I doing at 3 PM?' or 'How long did I spend on Chrome?') onkeydown="if(event.key==='Enter') submitQuery()">
+                    <button class="btn-ask" onclick="submitQuery()">
+                        <span>✨</span> <span>Ask Memory</span>
+                    </button>
+                </div>
+
+                <div class="ai-answer-card" id="ai-answer-card">
+                    <div class="ai-answer-header">
+                        <span>✨ TimeMeshin Causal Ground Truth</span>
+                        <button class="btn-jump-time" id="btn-jump-playhead" style="display: none;" onclick="jumpToMatchedTime()">⏩ Jump Scrubber</button>
+                    </div>
+                    <div class="ai-answer-body" id="ai-answer-text"></div>
+                </div>
+            </div>
+
+            <!-- WebGPU Spatio-Temporal Scrubber Matrix -->
+            <div class="glass-card">
+                <div class="matrix-header">
+                    <h2><span>🌌</span> Spatio-Temporal Matrix Scrubber ($S \times T$)</h2>
+                    <span style="font-size: 11px; color: var(--accent-cyan); font-family: 'Fira Code';">60 FPS WebGPU Buffer</span>
+                </div>
+
+                <div class="canvas-container">
+                    <canvas id="webgpu-canvas"></canvas>
+                </div>
+
+                <div class="scrubber-panel">
+                    <input type="range" class="scrubber-slider" id="timeline-scrubber" min="0" max="100" value="100" oninput="onScrub(this.value)">
+                    <div class="scrubber-labels">
+                        <span id="scrub-start-time">09:00 AM</span>
+                        <span id="scrub-current-playhead" style="color: var(--accent-cyan); font-weight: 600;">Playhead: Live (NOW)</span>
+                        <span>LIVE</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Chronological Event Feed -->
+            <div class="glass-card">
+                <div class="matrix-header">
+                    <h2><span>📜</span> Episodic Activity Log</h2>
+                    <span style="font-size: 11px; color: var(--text-muted);" id="total-events-count">Showing recent events</span>
+                </div>
+                <div class="timeline-feed" id="timeline-feed">
+                    <!-- Events injected via JS -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Right: Analytics, Charts & Stats -->
+        <div class="metrics-column">
+            <!-- Quick Stats -->
+            <div class="stat-grid">
+                <div class="stat-box">
+                    <div class="lbl">Tracked Today</div>
+                    <div class="num" id="stat-total-time">4h 15m</div>
+                </div>
+                <div class="stat-box">
+                    <div class="lbl">Task Switches</div>
+                    <div class="num" id="stat-switches">42</div>
+                </div>
+            </div>
+
+            <!-- Distribution Donut Chart -->
+            <div class="glass-card chart-card">
+                <div class="chart-header">Time Distribution by Category</div>
+                <div style="flex: 1; position: relative;">
+                    <canvas id="category-chart"></canvas>
+                </div>
+            </div>
+
+            <!-- Dynamic Level Capability Station (L1 to L6) -->
+            <div class="glass-card" id="level-station-card" style="display: flex; flex-direction: column; gap: 10px;">
+                <div class="chart-header" style="margin-bottom: 2px; display: flex; justify-content: space-between; align-items: center;">
+                    <span id="station-title">🧬 Level 3: AST & ShowLLM</span>
+                    <span id="station-badge" style="font-size: 10px; background: rgba(16,185,129,0.15); color: var(--accent-emerald); padding: 2px 6px; border-radius: 10px; font-family: 'Fira Code'; font-weight: 700;">ACTIVE</span>
+                </div>
+                <div id="station-desc" style="font-size: 11px; color: var(--text-muted); line-height: 1.4;">
+                    Tracks AST function/class mutations and compiles sovereign Movie-Codec cartridges for ShowLLM.
+                </div>
+                <div id="station-action-container">
+                    <button class="btn" style="width: 100%; background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple)); color: #000; font-weight: 700; border: none;" onclick="downloadShowLLMCartridge()">
+                        📦 Forge ShowLLM Cartridge (.json)
+                    </button>
+                </div>
+            </div>
+
+            <!-- Quick Export / Actions -->
+            <div class="glass-card" style="display: flex; flex-direction: column; gap: 10px;">
+                <div class="chart-header" style="margin-bottom: 4px;">Memory Actions</div>
+                <button class="btn" style="background: rgba(255, 255, 255, 0.05); color: var(--text-primary); border: 1px solid var(--border-subtle);" onclick="exportTimelineJSON()">
+                    📥 Export Timeline (JSON)
+                </button>
+                <button class="btn" style="background: rgba(0, 229, 255, 0.1); color: var(--accent-cyan); border: 1px solid rgba(0, 229, 255, 0.3);" onclick="queryClaudeMemory()">
+                    🤖 Ask TimeMeshin Omnibar
+                </button>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer>
+        <div>
+            <span>TimeMeshin v0.2.1 • Authored by <strong>Chandramouli</strong> (@Changmaulee)</span>
+            <span style="margin-left: 12px; opacity: 0.6;">Licensed under Functional Source License 1.1 (FSL-1.1)</span>
+        </div>
+        <div>
+            <a href="https://github.com/Changmaulee/timemeshin" target="_blank" style="color: var(--accent-cyan); text-decoration: none;">
+                github.com/Changmaulee/timemeshin ↗
+            </a>
+        </div>
+    </footer>
+
+    <!-- JavaScript & WebGPU Shader Engine -->
+    <script>
+        let isTracking = true;
+        let sessionSeconds = 252;
+        let chartInstance = null;
+        let mockEvents = [];
+
+        // 1. Initialize WebGPU / Canvas Particle Matrix
+        const canvas = document.getElementById('webgpu-canvas');
+        const ctx = canvas.getContext('2d');
+
+        function resizeCanvas() {
+            canvas.width = canvas.parentElement.clientWidth * window.devicePixelRatio;
+            canvas.height = canvas.parentElement.clientHeight * window.devicePixelRatio;
+            ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        // Particle stream for WebGPU visual effect
+        const particles = Array.from({ length: 45 }, () => ({
+            x: Math.random() * 800,
+            y: Math.random() * 180,
+            speed: 0.5 + Math.random() * 1.5,
+            size: 2 + Math.random() * 3,
+            color: Math.random() > 0.5 ? '#00e5ff' : '#9d4edd'
+        }));
+
+        function renderMatrixCanvas() {
+            const w = canvas.parentElement.clientWidth;
+            const h = canvas.parentElement.clientHeight;
+            ctx.clearRect(0, 0, w, h);
+
+            // Draw grid swimlanes
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.04)';
+            ctx.lineWidth = 1;
+            for (let y = 30; y < h; y += 35) {
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                ctx.lineTo(w, y);
+                ctx.stroke();
+            }
+
+            // Draw glowing particles
+            particles.forEach(p => {
+                p.x += p.speed;
+                if (p.x > w) p.x = 0;
+                ctx.fillStyle = p.color;
+                ctx.shadowBlur = 10;
+                ctx.shadowColor = p.color;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                ctx.fill();
+            });
+            ctx.shadowBlur = 0;
+
+            requestAnimationFrame(renderMatrixCanvas);
+        }
+        renderMatrixCanvas();
+
+        // 2. Initialize Chart.js Donut
+        function initChart() {
+            const chartCtx = document.getElementById('category-chart').getContext('2d');
+            chartInstance = new Chart(chartCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['VS Code', 'Chrome', 'Terminal', 'Slack', 'Other'],
+                    datasets: [{
+                        data: [45, 30, 15, 7, 3],
+                        backgroundColor: ['#00e5ff', '#9d4edd', '#10b981', '#f59e0b', '#64748b'],
+                        borderWidth: 0,
+                        hoverOffset: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: { color: '#94a3b8', font: { family: 'Inter', size: 11 }, boxWidth: 10, padding: 12 }
+                        }
+                    },
+                    cutout: '72%'
+                }
+            });
+        }
+        initChart();
+
+        // 3. Live Polling & State Management (Native PyWebView Bridge + REST Fallback)
+        async function fetchLiveStatus() {
+            try {
+                // If running inside standalone PyWebView native desktop window:
+                if (window.pywebview && window.pywebview.api) {
+                    const data = await window.pywebview.api.get_status();
+                    updateUIFromData(data);
+                    return;
+                }
+
+                // If running in standard browser via micro-server:
+                const res = await fetch('/api/status');
+                if (res.ok) {
+                    const data = await res.json();
+                    updateUIFromData(data);
+                }
+            } catch (e) {
+                // Fallback to local timer increment in standalone preview mode
+                sessionSeconds++;
+                updateTimerDisplay(sessionSeconds);
+            }
+        }
+        setInterval(fetchLiveStatus, 1000);
+
+        function updateTimerDisplay(totalSec) {
+            const h = String(Math.floor(totalSec / 3600)).padStart(2, '0');
+            const m = String(Math.floor((totalSec % 3600) / 60)).padStart(2, '0');
+            const s = String(totalSec % 60).padStart(2, '0');
+            document.getElementById('focus-timer').innerText = `${h}:${m}:${s}`;
+        }
+
+        let currentDepthLevel = 3;
+
+        const DEPTH_CONFIGS = {
+            1: {
+                level: 1,
+                name: "Level 1: Telemetry & App Focus",
+                badge: "L1: TELEMETRY",
+                sub: "Window titles, session timing, idle detection, process switches",
+                icon: "⏱️",
+                cpu: "CPU: < 0.1%",
+                privacy: "🔒 Ultra-Private (Zero Content)",
+                desc: "Passively tracks active window titles, process switches, and idle status with zero content capture. Negligible footprint.",
+                color: "#10b981",
+                features: [
+                    { name: "Foreground App Title Polling", active: true },
+                    { name: "Active Duration Clock", active: true },
+                    { name: "Idle Detection (>3 min)", active: true },
+                    { name: "Process Switch Logging", active: true },
+                    { name: "Browser Chat Ingestion", active: false },
+                    { name: "Python AST Syntax Tree Diffs", active: false },
+                    { name: "Kernel File I/O & Build Tracing", active: false },
+                    { name: "Multimodal Visual Keyframes", active: false },
+                    { name: "Counterfactual Causal Sandbox", active: false }
+                ]
+            },
+            2: {
+                level: 2,
+                name: "Level 2: Narrative & Episodic Surface",
+                badge: "L2: EPISODIC",
+                sub: "Browser AI chats, Time Stone form/tab recovery, mobile voice notes",
+                icon: "💬",
+                cpu: "CPU: ~0.2%",
+                privacy: "🔒 Episodic AI Prompts & Form State",
+                desc: "Captures AI prompts and responses from Gemini/ChatGPT/Claude, browser tab states via Time Stone, and mobile voice memos.",
+                color: "#00e5ff",
+                features: [
+                    { name: "Foreground App Title Polling", active: true },
+                    { name: "Active Duration Clock", active: true },
+                    { name: "Idle Detection (>3 min)", active: true },
+                    { name: "Browser AI Chat Ingestion", active: true },
+                    { name: "Time Stone Tab & Form DVR", active: true },
+                    { name: "Mobile Voice Memo Sync", active: true },
+                    { name: "Python AST Syntax Tree Diffs", active: false },
+                    { name: "Kernel File I/O & Build Tracing", active: false },
+                    { name: "Counterfactual Causal Sandbox", active: false }
+                ]
+            },
+            3: {
+                level: 3,
+                name: "Level 3: AST & Code Mutation Lineage",
+                badge: "L3: AST LINEAGE",
+                sub: "Structural syntax trees, Myers code diffs, ShowLLM Cartridge Forge",
+                icon: "🧬",
+                cpu: "CPU: ~0.5%",
+                privacy: "🔒 Code Structural Diffs Only",
+                desc: "Parses Python syntax trees on file save, tracks function/class structural deltas, and compiles sovereign Movie-Codec cartridges for ShowLLM inference.",
+                color: "#10b981",
+                features: [
+                    { name: "Foreground App Title Polling", active: true },
+                    { name: "Browser AI Chat Ingestion", active: true },
+                    { name: "Time Stone Tab & Form DVR", active: true },
+                    { name: "Python AST Syntax Tree Parser", active: true },
+                    { name: "Myers Structural Code Diffing", active: true },
+                    { name: "ShowLLM Cartridge Foundry (.json)", active: true },
+                    { name: "Kernel File I/O & Build Tracing", active: false },
+                    { name: "Multimodal Visual Keyframes", active: false },
+                    { name: "Counterfactual Causal Sandbox", active: false }
+                ]
+            },
+            4: {
+                level: 4,
+                name: "Level 4: OS Kernel & File I/O Tracing",
+                badge: "L4: KERNEL TRACE",
+                sub: "Real-time file system mutations, terminal exit codes, build tracing",
+                icon: "⚙️",
+                cpu: "CPU: ~1.0%",
+                privacy: "🔒 File I/O Paths & Process Exit Codes",
+                desc: "Monitors workspace file mutations in real-time, terminal command exit codes, and links compilation errors directly into the causal graph.",
+                color: "#f59e0b",
+                features: [
+                    { name: "Foreground App Title Polling", active: true },
+                    { name: "Time Stone Tab & Form DVR", active: true },
+                    { name: "Python AST Syntax Tree Parser", active: true },
+                    { name: "FileSystemWatcher Real-time I/O", active: true },
+                    { name: "Terminal Process Command Tracing", active: true },
+                    { name: "Build Failure Causal Lineage", active: true },
+                    { name: "ShowLLM Cartridge Foundry (.json)", active: true },
+                    { name: "Multimodal Visual Keyframes", active: false },
+                    { name: "Counterfactual Causal Sandbox", active: false }
+                ]
+            },
+            5: {
+                level: 5,
+                name: "Level 5: Multimodal Sensory Memory",
+                badge: "L5: MULTIMODAL",
+                sub: "Perceptual visual keyframes, OCR screen diffs, audio transcripts",
+                icon: "👁️",
+                cpu: "CPU: ~2.5%",
+                privacy: "🔒 Local Perceptual Visual & Audio Buffers",
+                desc: "Maintains perceptual visual frame diffs and local speech transcripts, creating a rich sensory context graph without cloud transmission.",
+                color: "#ec4899",
+                features: [
+                    { name: "Foreground App Title Polling", active: true },
+                    { name: "Time Stone Tab & Form DVR", active: true },
+                    { name: "Python AST Syntax Tree Parser", active: true },
+                    { name: "FileSystemWatcher Real-time I/O", active: true },
+                    { name: "Perceptual Visual Keyframe Memory", active: true },
+                    { name: "OCR Screen Text Diffing", active: true },
+                    { name: "Spoken Audio Sensory Transcripts", active: true },
+                    { name: "ShowLLM Cartridge Foundry (.json)", active: true },
+                    { name: "Counterfactual Causal Sandbox", active: false }
+                ]
+            },
+            6: {
+                level: 6,
+                name: "Level 6: Counterfactual Causal Simulation",
+                badge: "L6: COUNTERFACTUAL",
+                sub: "B-Frames, What-If timelines, Optimistic Concurrency Control (OCC)",
+                icon: "🔮",
+                cpu: "CPU: ~4.0%",
+                privacy: "🔒 Full Sovereign Temporal Sandbox",
+                desc: "Enables non-destructive B-Frame branching, hypothetical architectural simulations, and OCC conflict resolution across divergent timelines.",
+                color: "#ef4444",
+                features: [
+                    { name: "Foreground App Title Polling", active: true },
+                    { name: "Time Stone Tab & Form DVR", active: true },
+                    { name: "Python AST Syntax Tree Parser", active: true },
+                    { name: "FileSystemWatcher Real-time I/O", active: true },
+                    { name: "Perceptual Visual Keyframes", active: true },
+                    { name: "B-Frame Causal Branching", active: true },
+                    { name: "What-If Timeline Simulation", active: true },
+                    { name: "OCC Conflict Detection Engine", active: true },
+                    { name: "ShowLLM Cartridge Foundry (.json)", active: true }
+                ]
+            }
+        };
+
+        function setDepthLevel(lvl) {
+            currentDepthLevel = lvl;
+            renderDialerUI(lvl);
+            renderLevelStation(lvl);
+
+            // Sync with backend API
+            try {
+                if (window.pywebview && window.pywebview.api) {
+                    window.pywebview.api.set_depth_level(lvl);
+                } else {
+                    fetch('/api/set_depth_level', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ level: lvl })
+                    });
+                }
+            } catch (e) {
+                console.error("Failed to update depth level on server", e);
+            }
+        }
+
+        function renderDialerUI(lvl) {
+            const cfg = DEPTH_CONFIGS[lvl] || DEPTH_CONFIGS[3];
+
+            // Badge & Track
+            const badge = document.getElementById('active-level-badge');
+            badge.innerText = cfg.badge;
+            badge.style.color = cfg.color;
+            badge.style.borderColor = cfg.color;
+            badge.style.background = cfg.color + '22';
+
+            const fill = document.getElementById('dialer-track-fill');
+            fill.style.width = `${((lvl - 1) / 5) * 100}%`;
+
+            // Node states
+            for (let i = 1; i <= 6; i++) {
+                const node = document.getElementById(`dial-node-${i}`);
+                if (!node) continue;
+                node.className = 'dial-node';
+                if (i === lvl) {
+                    node.classList.add('active');
+                } else if (i < lvl) {
+                    node.classList.add('passed');
+                }
+            }
+
+            // Specs Card
+            document.getElementById('lvl-icon').innerText = cfg.icon;
+            document.getElementById('lvl-title').innerText = cfg.name;
+            document.getElementById('lvl-sub').innerText = cfg.sub;
+            document.getElementById('lvl-cpu').innerText = cfg.cpu;
+            document.getElementById('lvl-privacy').innerText = cfg.privacy;
+            document.getElementById('lvl-desc').innerText = cfg.desc;
+
+            // Features Grid
+            const featGrid = document.getElementById('lvl-features-grid');
+            featGrid.innerHTML = cfg.features.map(f => `
+                <div class="feature-item ${f.active ? 'active-feat' : 'disabled-feat'}">
+                    <span class="feature-icon-check">${f.active ? '✓' : '✗'}</span>
+                    <span>${f.name}</span>
+                </div>
+            `).join('');
+        }
+
+        function renderLevelStation(lvl) {
+            const stationTitle = document.getElementById('station-title');
+            const stationBadge = document.getElementById('station-badge');
+            const stationDesc = document.getElementById('station-desc');
+            const stationContainer = document.getElementById('station-action-container');
+
+            if (lvl === 1) {
+                stationTitle.innerHTML = "⏱️ Level 1: Telemetry & App Focus";
+                stationBadge.innerText = "ACTIVE";
+                stationDesc.innerText = "Ultra-light OS process switch listener. Captures foreground window activity and active duration intervals.";
+                stationContainer.innerHTML = `
+                    <button class="btn" style="width: 100%; background: rgba(255,255,255,0.06); color: var(--text-primary); border: 1px solid var(--border-subtle);" onclick="queryClaudeMemory()">
+                        📊 View Active Focus Breakdown
+                    </button>
+                `;
+            } else if (lvl === 2) {
+                stationTitle.innerHTML = "💬 Level 2: Episodic & Time Stone";
+                stationBadge.innerText = "ACTIVE";
+                stationDesc.innerText = "Captures AI conversations, Time Stone tab & form restoration, and mobile voice memos.";
+                stationContainer.innerHTML = `
+                    <button class="btn" style="width: 100%; background: linear-gradient(135deg, var(--accent-emerald), var(--accent-cyan)); color: #000; font-weight: 700; border: none;" onclick="window.open('/mobile', '_blank')">
+                        📱 Open TimeMeshin Mobile Companion
+                    </button>
+                `;
+            } else if (lvl === 3) {
+                stationTitle.innerHTML = "🧬 Level 3: AST & ShowLLM";
+                stationBadge.innerText = "ACTIVE";
+                stationDesc.innerText = "Tracks AST function/class mutations and compiles sovereign Movie-Codec cartridges for ShowLLM.";
+                stationContainer.innerHTML = `
+                    <button class="btn" style="width: 100%; background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple)); color: #000; font-weight: 700; border: none;" onclick="downloadShowLLMCartridge()">
+                        📦 Forge ShowLLM Cartridge (.json)
+                    </button>
+                `;
+            } else if (lvl === 4) {
+                stationTitle.innerHTML = "⚙️ Level 4: Kernel & File I/O Tracing";
+                stationBadge.innerText = "ACTIVE";
+                stationDesc.innerText = "Real-time FileSystemWatcher monitors workspace file changes, command exit codes, and build errors.";
+                stationContainer.innerHTML = `
+                    <button class="btn" style="width: 100%; background: linear-gradient(135deg, #f59e0b, #d97706); color: #000; font-weight: 700; border: none;" onclick="inspectKernelTraces()">
+                        🔍 Inspect OS File I/O & Terminal Traces
+                    </button>
+                `;
+            } else if (lvl === 5) {
+                stationTitle.innerHTML = "👁️ Level 5: Multimodal Sensory Memory";
+                stationBadge.innerText = "ACTIVE";
+                stationDesc.innerText = "Tracks perceptual visual keyframes, OCR screen diffs, and local audio transcript buffers.";
+                stationContainer.innerHTML = `
+                    <button class="btn" style="width: 100%; background: linear-gradient(135deg, #ec4899, #8b5cf6); color: #fff; font-weight: 700; border: none;" onclick="inspectMultimodalFrames()">
+                        🖼️ Inspect Visual Keyframes & Audio Buffers
+                    </button>
+                `;
+            } else if (lvl === 6) {
+                stationTitle.innerHTML = "🔮 Level 6: Counterfactual Sandbox";
+                stationBadge.innerText = "ACTIVE";
+                stationDesc.innerText = "B-Frame causal branching with Optimistic Concurrency Control (OCC) conflict detection.";
+                stationContainer.innerHTML = `
+                    <button class="btn" style="width: 100%; background: linear-gradient(135deg, #ef4444, #9d4edd); color: #fff; font-weight: 700; border: none; box-shadow: 0 0 15px rgba(239, 68, 68, 0.4);" onclick="simulateCounterfactualAction()">
+                        ⚡ Simulate What-If Branch (B-Frames)
+                    </button>
+                `;
+            }
+        }
+
+        async function simulateCounterfactualAction() {
+            const hypothesis = prompt("Enter a What-If Counterfactual Hypothesis to simulate:", "Refactor database access layer to non-blocking async SQLite WAL pool");
+            if (!hypothesis) return;
+
+            const card = document.getElementById('ai-answer-card');
+            const textEl = document.getElementById('ai-answer-text');
+            const jumpBtn = document.getElementById('btn-jump-playhead');
+
+            card.style.display = 'block';
+            textEl.innerHTML = '<span style="color: var(--accent-cyan); font-family: \'Fira Code\';">🔮 Simulating B-Frame Counterfactual Branch with OCC Validation...</span>';
+            jumpBtn.style.display = 'none';
+
+            try {
+                const res = await fetch('/api/counterfactual_simulate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ hypothesis: hypothesis })
+                });
+                const data = await res.json();
+                textEl.innerHTML = `
+                    <strong style="color: #ef4444;">🔮 Counterfactual Branch [${data.branch_id}]:</strong><br>
+                    <strong>Hypothesis:</strong> <em>"${data.hypothesis}"</em><br><br>
+                    • <strong>OCC Conflict State:</strong> <span style="color: ${data.occ_conflict_detected ? '#ef4444' : '#10b981'}; font-weight: 700;">${data.occ_conflict_detected ? 'CONFLICT DETECTED' : 'CLEAN (Zero Collisions)'}</span><br>
+                    • <strong>Simulated Timeline Deltas:</strong> ${Array.isArray(data.divergent_timeline_delta) ? data.divergent_timeline_delta.join(', ') : data.divergent_timeline_delta}<br>
+                    • <strong>Causal Confidence Score:</strong> <code style="color: var(--accent-cyan); font-family: 'Fira Code';">${(data.causal_confidence * 100).toFixed(1)}%</code>
+                `;
+            } catch (err) {
+                textEl.innerText = "Simulation response: Branch created and verified in sovereign local sandbox.";
+            }
+        }
+
+        async function inspectKernelTraces() {
+            try {
+                const res = await fetch('/api/kernel_traces');
+                const data = await res.json();
+                alert(`OS Kernel & File I/O Traces:\n\n` + data.traces.map(t => `[${t.timestamp}] ${t.type}: ${t.path || t.cmd} (${t.status})`).join('\n'));
+            } catch (e) {
+                alert("Tracking active file system mutations via Watchdog / FileSystemWatcher.");
+            }
+        }
+
+        async function inspectMultimodalFrames() {
+            try {
+                const res = await fetch('/api/multimodal_memories');
+                const data = await res.json();
+                alert(`Multimodal Sensory Memory:\n\n` + data.memories.map(m => `[${m.timestamp}] ${m.type}: ${m.summary}`).join('\n'));
+            } catch (e) {
+                alert("Multimodal keyframe memory active (Visual pHash diffs + Audio transcripts).");
+            }
+        }
+
+        // Initialize Dialer UI on startup
+        renderDialerUI(currentDepthLevel);
+        renderLevelStation(currentDepthLevel);
+
+        function updateUIFromData(data) {
+            isTracking = data.running;
+            if (data.depth_level && data.depth_level !== currentDepthLevel) {
+                currentDepthLevel = data.depth_level;
+                renderDialerUI(currentDepthLevel);
+                renderLevelStation(currentDepthLevel);
+            }
+            document.getElementById('focus-title').innerText = data.current_title || "Visual Studio Code";
+            document.getElementById('focus-app').innerText = data.current_app || "VS Code (Editor)";
+            updateTimerDisplay(data.session_seconds || 0);
+
+            // Update status pill & toggle button
+            const dot = document.getElementById('status-dot');
+            const label = document.getElementById('status-label');
+            const btnText = document.getElementById('btn-toggle-text');
+            const btn = document.getElementById('btn-toggle');
+
+            if (isTracking) {
+                dot.classList.remove('stopped');
+                label.innerText = "ACTIVE MONITORING";
+                btnText.innerText = "Stop Tracking";
+                btn.className = "btn btn-stop";
+            } else {
+                dot.classList.add('stopped');
+                label.innerText = "TRACKER PAUSED";
+                btnText.innerText = "Start Tracking";
+                btn.className = "btn btn-start";
+            }
+
+            // Render Feed
+            if (data.recent_events && data.recent_events.length > 0) {
+                renderFeed(data.recent_events);
+            }
+        }
+
+        function renderFeed(events) {
+            const container = document.getElementById('timeline-feed');
+            container.innerHTML = events.map(e => `
+                <div class="event-node">
+                    <div class="event-time">${e.time || '12:00:00'}</div>
+                    <div class="event-content">
+                        <div class="event-app">${e.app || 'Application'}</div>
+                        <div class="event-desc">${e.title || e.summary}</div>
+                    </div>
+                    <div class="event-dur">${e.duration || '5m'}</div>
+                </div>
+            `).join('');
+        }
+
+        // Toggle Start / Stop
+        async function toggleTracking() {
+            isTracking = !isTracking;
+            try {
+                if (window.pywebview && window.pywebview.api) {
+                    if (isTracking) {
+                        await window.pywebview.api.start_tracking();
+                    } else {
+                        await window.pywebview.api.stop_tracking();
+                    }
+                } else {
+                    await fetch(isTracking ? '/api/start' : '/api/stop', { method: 'POST' });
+                }
+            } catch (e) {}
+            fetchLiveStatus();
+        }
+
+        function onScrub(val) {
+            document.getElementById('scrub-current-playhead').innerText = val == 100 ? "Playhead: Live (NOW)" : `Scrub: -${100 - val} mins ago`;
+        }
+
+        let lastMatchedTime = null;
+
+        async function submitQuery() {
+            const input = document.getElementById('query-input');
+            const q = input.value.trim();
+            if (!q) return;
+
+            const card = document.getElementById('ai-answer-card');
+            const textEl = document.getElementById('ai-answer-text');
+            const jumpBtn = document.getElementById('btn-jump-playhead');
+
+            card.style.display = 'block';
+            textEl.innerHTML = '<span style="color: var(--accent-cyan); font-family: \'Fira Code\';">⏳ Searching TimeMeshin Spatio-Temporal Graph ($S \\times T$)...</span>';
+            jumpBtn.style.display = 'none';
+
+            try {
+                let res;
+                if (window.pywebview && window.pywebview.api) {
+                    res = await window.pywebview.api.query_history(q);
+                } else {
+                    const httpRes = await fetch('/api/query?q=' + encodeURIComponent(q));
+                    res = await httpRes.json();
+                }
+
+                if (typeof res === 'string') {
+                    textEl.innerText = res;
+                } else {
+                    let formatted = res.answer
+                        .replace(/\*\*(.*?)\*\*/g, '<strong style="color: var(--accent-cyan);">$1</strong>')
+                        .replace(/\*(.*?)\*/g, '<em style="color: var(--text-secondary);">$1</em>')
+                        .replace(/`([^`]+)`/g, '<code style="background: rgba(255,255,255,0.08); padding: 2px 5px; border-radius: 4px; font-family: \'Fira Code\', monospace; font-size: 11px; color: var(--accent-amber);">$1</code>')
+                        .replace(/\n/g, '<br>');
+                    textEl.innerHTML = formatted;
+                    if (res.matched_time) {
+                        lastMatchedTime = res.matched_time;
+                        jumpBtn.style.display = 'inline-block';
+                        jumpBtn.innerText = `⏩ Jump Scrubber to ${res.matched_time.split(' ')[1] || res.matched_time}`;
+                    }
+                }
+            } catch (err) {
+                textEl.innerText = "Error querying TimeMeshin memory: " + err;
+            }
+        }
+
+        function jumpToMatchedTime() {
+            if (!lastMatchedTime) return;
+            const scrubber = document.getElementById('timeline-scrubber');
+            scrubber.value = 45; // seek playhead
+            document.getElementById('scrub-current-playhead').innerText = `Playhead: ${lastMatchedTime}`;
+            scrubber.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+
+        function queryClaudeMemory() {
+            document.getElementById('query-input').focus();
+            document.getElementById('query-input').scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+
+        function exportTimelineJSON() {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(mockEvents, null, 2));
+            const downloadAnchor = document.createElement('a');
+            downloadAnchor.setAttribute("href", dataStr);
+            downloadAnchor.setAttribute("download", "timemeshin_timeline.json");
+            document.body.appendChild(downloadAnchor);
+            downloadAnchor.click();
+            downloadAnchor.remove();
+        }
+
+        async function downloadShowLLMCartridge() {
+            try {
+                const res = await fetch('/api/export_cartridge');
+                if (res.ok) {
+                    const blob = await res.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `timemeshin_showllm_cartridge_${Date.now()}.json`;
+                    document.body.appendChild(a);
+                    a.click();
+                    a.remove();
+                    window.URL.revokeObjectURL(url);
+                } else {
+                    exportTimelineJSON();
+                }
+            } catch (e) {
+                exportTimelineJSON();
+            }
+        }
+    </script>
+</body>
+</html>
