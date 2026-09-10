@@ -45,7 +45,8 @@ from timemeshin import (
     ProcessCommandTracer,
     VisualFrameMemory,
     AudioSensoryMemory,
-    CounterfactualEngine
+    CounterfactualEngine,
+    LicenseManager
 )
 
 # Persistent Application Data Directory
@@ -142,7 +143,9 @@ class TimeMeshinAPI:
     def __init__(self):
         self.client = TimeMeshinClient(db_path=str(DB_PATH))
         self.running = True
-        self.depth_level = 3
+        self.license_mgr = LicenseManager
+        lic = self.license_mgr.get_status()
+        self.depth_level = 3 if lic["is_pro"] else 2
         self.current_app = "Desktop"
         self.current_title = "Initializing TimeMeshin..."
         self.session_seconds = 0
@@ -212,6 +215,7 @@ class TimeMeshinAPI:
                 window_start = now
 
     def get_status(self) -> Dict[str, Any]:
+        lic = self.license_mgr.get_status()
         return {
             "running": self.running,
             "depth_level": self.depth_level,
@@ -221,7 +225,11 @@ class TimeMeshinAPI:
             "start_time": self.start_time,
             "app_stats": self.app_stats,
             "recent_events": self.recent_events,
-            "db_path": str(DB_PATH)
+            "db_path": str(DB_PATH),
+            "license": lic,
+            "is_pro": lic.get("is_pro", False),
+            "tier": lic.get("tier", "FREE"),
+            "max_allowed_level": lic.get("max_level", 2)
         }
 
     def start_tracking(self) -> bool:
@@ -234,6 +242,15 @@ class TimeMeshinAPI:
 
     def set_depth_level(self, level: int) -> Dict[str, Any]:
         lvl = int(level)
+        lic = self.license_mgr.get_status()
+        if lvl > lic["max_level"]:
+            return {
+                "status": "pro_required",
+                "message": f"Level {lvl} ({DEPTH_LEVELS[lvl]['name']}) requires TimeMeshin Pro. Your current Free tier covers Levels 1–2.",
+                "requested_level": lvl,
+                "current_level": self.depth_level,
+                "max_level": lic["max_level"]
+            }
         if 1 <= lvl <= 6:
             self.depth_level = lvl
             info = DEPTH_LEVELS.get(lvl, {})
@@ -256,9 +273,55 @@ class TimeMeshinAPI:
             return {"status": "ok", "depth_level": self.depth_level, "info": info}
         return {"status": "error", "message": "Invalid depth level (must be 1-6)"}
 
+    def activate_license(self, license_key: str) -> Dict[str, Any]:
+        success, msg = self.license_mgr.activate(license_key)
+        if success:
+            ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            try:
+                self.client.fast_ingest(
+                    raw_text="LICENSE UNLOCKED: TimeMeshin Pro God-Mode (Levels 1-6 enabled)",
+                    timestamp=ts,
+                    rack="Licensing Entitlements"
+                )
+            except Exception:
+                pass
+            self.recent_events.insert(0, {
+                "time": datetime.now().strftime("%H:%M:%S"),
+                "app": "TimeMeshin License 👑",
+                "title": "TimeMeshin Pro Activated — All 6 Levels Unlocked!",
+                "duration": "pro"
+            })
+            self.recent_events = self.recent_events[:50]
+        return {"success": success, "message": msg, "license": self.license_mgr.get_status()}
+
+    def downgrade_license(self) -> Dict[str, Any]:
+        lic = self.license_mgr.downgrade_to_free()
+        if self.depth_level > 2:
+            self.depth_level = 2
+        ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        try:
+            self.client.fast_ingest(
+                raw_text="LICENSE DOWNGRADED: Active telemetry set to Level 2. Historical L3-L6 data remains 100% locally accessible.",
+                timestamp=ts,
+                rack="Licensing Entitlements"
+            )
+        except Exception:
+            pass
+        self.recent_events.insert(0, {
+            "time": datetime.now().strftime("%H:%M:%S"),
+            "app": "TimeMeshin License 🛡️",
+            "title": "Active telemetry set to Level 2 (Free). Past memories preserved locally.",
+            "duration": "free"
+        })
+        self.recent_events = self.recent_events[:50]
+        return {"status": "downgraded", "license": lic, "depth_level": self.depth_level}
+
     def get_depth_levels(self) -> Dict[str, Any]:
+        lic = self.license_mgr.get_status()
         return {
             "current_level": self.depth_level,
+            "max_allowed_level": lic["max_level"],
+            "is_pro": lic["is_pro"],
             "levels": DEPTH_LEVELS
         }
 
@@ -445,6 +508,9 @@ class DashboardRequestHandler(BaseHTTPRequestHandler):
             memories = global_api.visual_memory.get_recent_keyframes(limit=20)
             self._send_json({"status": "ok", "memories": memories})
 
+        elif path == '/api/license_status':
+            self._send_json(global_api.license_mgr.get_status())
+
         else:
             self.send_error(404, "Endpoint not found")
 
@@ -462,6 +528,15 @@ class DashboardRequestHandler(BaseHTTPRequestHandler):
         if path == '/api/set_depth_level':
             lvl = payload.get('level', 3)
             res = global_api.set_depth_level(lvl)
+            self._send_json(res)
+
+        elif path == '/api/activate_license':
+            key = payload.get('key', '')
+            res = global_api.activate_license(key)
+            self._send_json(res)
+
+        elif path == '/api/downgrade_license':
+            res = global_api.downgrade_license()
             self._send_json(res)
 
         elif path == '/api/counterfactual_simulate':

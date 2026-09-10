@@ -24,6 +24,9 @@ from .multimodal_memory import VisualFrameMemory, AudioSensoryMemory
 # Level 6: Counterfactual Causal Simulation
 from .counterfactual_engine import CounterfactualEngine, CounterfactualBranch
 
+# Licensing & Tier Entitlements (Free L1-2 vs Pro L3-6)
+from .license import LicenseManager
+
 # Backward compatibility
 ChronoMeshClient = TimeMeshinClient
 
@@ -31,6 +34,7 @@ __version__ = "0.2.1"
 __all__ = [
     "TimeMeshinClient",
     "ChronoMeshClient",
+    "LicenseManager",
     "StateDelta",
     "SemanticEvent",
     "Keyframe",

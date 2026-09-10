@@ -1032,6 +1032,10 @@
         </div>
 
         <div class="controls">
+            <button class="github-link-btn" id="tier-header-btn" style="background: linear-gradient(135deg, rgba(245, 158, 11, 0.15), rgba(157, 78, 221, 0.15)); border-color: rgba(245, 158, 11, 0.4); color: #f59e0b; font-weight: 600;" onclick="openLicenseModal()" title="Manage TimeMeshin Free / Pro Tier">
+                <span id="tier-header-icon">👑</span> <span id="tier-header-text">Upgrade to Pro</span>
+            </button>
+
             <button class="github-link-btn" style="background: rgba(0, 229, 255, 0.12); border-color: rgba(0, 229, 255, 0.4); color: var(--accent-cyan); font-weight: 600;" onclick="openLevelGuideModal()" title="View 6-Level Depth Architecture One-Pager">
                 <span>📘</span> <span>Architecture Guide (One-Pager)</span>
             </button>
@@ -1211,6 +1215,59 @@
         </div>
     </div>
 
+    <!-- 👑 Unlock TimeMeshin Pro Modal -->
+    <div class="modal-overlay" id="license-modal" onclick="if(event.target===this) closeLicenseModal()">
+        <div class="modal-content" style="max-width: 680px;">
+            <div class="modal-header" style="border-bottom: 1px solid rgba(245,158,11,0.3);">
+                <h2 style="color: #f59e0b;"><span style="color: #f59e0b;">👑</span> Unlock TimeMeshin Pro (Levels 3–6)</h2>
+                <button class="btn-close-modal" onclick="closeLicenseModal()" title="Close (ESC)">✕</button>
+            </div>
+
+            <div class="modal-body">
+                <div style="background: linear-gradient(135deg, rgba(245,158,11,0.1), rgba(157,78,221,0.1)); border: 1px solid rgba(245,158,11,0.3); border-radius: 12px; padding: 16px; margin-bottom: 16px;">
+                    <div style="font-size: 14px; font-weight: 700; color: #f8fafc; margin-bottom: 6px;">
+                        🟢 Free Tier (Levels 1–2) vs 👑 Pro Tier (Levels 3–6)
+                    </div>
+                    <div style="font-size: 12px; color: var(--text-secondary); line-height: 1.5;">
+                        • <strong>Free Tier:</strong> Level 1 (Telemetry & Focus) + Level 2 (Episodic & Doctor Strange Tab/Form Recovery).<br>
+                        • <strong>Pro Tier Unlocks:</strong> Level 3 (AST Diffs & ShowLLM Cartridges), Level 4 (Kernel File I/O Tracing), Level 5 (Multimodal Keyframes), and Level 6 (Counterfactual B-Frames & OCC).
+                    </div>
+                </div>
+
+                <div style="background: rgba(16,185,129,0.08); border: 1px solid rgba(16,185,129,0.3); border-radius: 10px; padding: 12px 16px; margin-bottom: 18px;">
+                    <div style="font-size: 12px; font-weight: 700; color: var(--accent-emerald); display: flex; align-items: center; gap: 6px;">
+                        <span>🛡️</span> Sovereign Graceful Downgrade Guarantee:
+                    </div>
+                    <div style="font-size: 11px; color: var(--text-secondary); margin-top: 4px; line-height: 1.4;">
+                        If your subscription ever lapses, active capture gracefully drops to <strong>Level 2 (Free)</strong>. Your past recorded Level 3–6 AST mutations, keyframes, and B-Frames <strong>remain 100% locally preserved and searchable forever</strong>.
+                    </div>
+                </div>
+
+                <!-- License Key Box -->
+                <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px;">
+                    <label style="font-size: 12px; font-weight: 600; color: var(--text-primary);">Enter TimeMeshin Pro License Key:</label>
+                    <div style="display: flex; gap: 10px;">
+                        <input type="text" id="license-key-input" placeholder="e.g. TM-PRO-XXXX-XXXX or TIMEMESHIN-PRO" style="flex: 1; background: rgba(0,0,0,0.6); border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; padding: 10px 14px; font-family: 'Fira Code', monospace; font-size: 13px; color: #fff; outline: none;">
+                        <button onclick="submitLicenseKey()" class="btn" style="background: linear-gradient(135deg, #f59e0b, #d97706); color: #000; font-weight: 700;">
+                            ✨ Activate Key
+                        </button>
+                    </div>
+                    <div id="license-msg" style="font-size: 12px; font-weight: 600; min-height: 18px;"></div>
+                </div>
+
+                <!-- Action row -->
+                <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border-subtle); padding-top: 14px;">
+                    <button onclick="activateFounderTrial()" style="background: rgba(255,255,255,0.06); border: 1px solid var(--border-subtle); color: var(--text-secondary); border-radius: 8px; padding: 8px 14px; font-size: 11px; cursor: pointer;">
+                        🚀 1-Click Developer Preview Unlock
+                    </button>
+                    <button onclick="downgradeToFree()" style="background: transparent; border: 1px solid rgba(239,68,68,0.3); color: #ef4444; border-radius: 8px; padding: 8px 14px; font-size: 11px; cursor: pointer;">
+                        Revert to Free Tier (Drop to L2)
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Main Grid -->
     <main>
         <!-- Left: Live Focus, WebGPU Matrix & Timeline -->
@@ -1239,27 +1296,27 @@
                     <div class="dialer-nodes">
                         <div class="dial-node passed" id="dial-node-1" onclick="setDepthLevel(1)">
                             <span>1</span>
-                            <span class="dial-node-label">⏱️ Focus</span>
+                            <span class="dial-node-label">⏱️ Focus <small style="color: #10b981; font-weight: 700; font-size: 8px;">FREE</small></span>
                         </div>
                         <div class="dial-node passed" id="dial-node-2" onclick="setDepthLevel(2)">
                             <span>2</span>
-                            <span class="dial-node-label">💬 Episodic</span>
+                            <span class="dial-node-label">💬 Episodic <small style="color: #10b981; font-weight: 700; font-size: 8px;">FREE</small></span>
                         </div>
                         <div class="dial-node active" id="dial-node-3" onclick="setDepthLevel(3)">
                             <span>3</span>
-                            <span class="dial-node-label">🧬 AST</span>
+                            <span class="dial-node-label">🧬 AST <small style="color: #f59e0b; font-weight: 700; font-size: 8px;">👑PRO</small></span>
                         </div>
                         <div class="dial-node" id="dial-node-4" onclick="setDepthLevel(4)">
                             <span>4</span>
-                            <span class="dial-node-label">⚙️ Kernel</span>
+                            <span class="dial-node-label">⚙️ Kernel <small style="color: #f59e0b; font-weight: 700; font-size: 8px;">👑PRO</small></span>
                         </div>
                         <div class="dial-node" id="dial-node-5" onclick="setDepthLevel(5)">
                             <span>5</span>
-                            <span class="dial-node-label">👁️ Multi</span>
+                            <span class="dial-node-label">👁️ Multi <small style="color: #f59e0b; font-weight: 700; font-size: 8px;">👑PRO</small></span>
                         </div>
                         <div class="dial-node" id="dial-node-6" onclick="setDepthLevel(6)">
                             <span>6</span>
-                            <span class="dial-node-label">🔮 Causal</span>
+                            <span class="dial-node-label">🔮 Causal <small style="color: #f59e0b; font-weight: 700; font-size: 8px;">👑PRO</small></span>
                         </div>
                     </div>
                 </div>
@@ -1669,7 +1726,15 @@
             }
         };
 
+        let isProUser = false;
+        let maxAllowedLevel = 2;
+
         function setDepthLevel(lvl) {
+            if (lvl > maxAllowedLevel && !isProUser) {
+                openLicenseModal(lvl);
+                return;
+            }
+
             currentDepthLevel = lvl;
             renderDialerUI(lvl);
             renderLevelStation(lvl);
@@ -1683,6 +1748,10 @@
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ level: lvl })
+                    }).then(res => res.json()).then(data => {
+                        if (data.status === 'pro_required') {
+                            openLicenseModal(lvl);
+                        }
                     });
                 }
             } catch (e) {
@@ -1856,6 +1925,10 @@
 
         function updateUIFromData(data) {
             isTracking = data.running;
+            if (data.license) {
+                isProUser = data.license.is_pro || false;
+                maxAllowedLevel = data.license.max_level || (isProUser ? 6 : 2);
+            }
             if (data.depth_level && data.depth_level !== currentDepthLevel) {
                 currentDepthLevel = data.depth_level;
                 renderDialerUI(currentDepthLevel);
@@ -1864,6 +1937,26 @@
             document.getElementById('focus-title').innerText = data.current_title || "Visual Studio Code";
             document.getElementById('focus-app').innerText = data.current_app || "VS Code (Editor)";
             updateTimerDisplay(data.session_seconds || 0);
+
+            // Update Tier Button in Header
+            const tierBtn = document.getElementById('tier-header-btn');
+            const tierText = document.getElementById('tier-header-text');
+            const tierIcon = document.getElementById('tier-header-icon');
+            if (tierBtn && tierText) {
+                if (isProUser) {
+                    tierBtn.style.background = "rgba(16, 185, 129, 0.15)";
+                    tierBtn.style.borderColor = "rgba(16, 185, 129, 0.5)";
+                    tierText.innerText = "PRO ACTIVE";
+                    tierText.style.color = "var(--accent-emerald)";
+                    tierIcon.innerText = "👑";
+                } else {
+                    tierBtn.style.background = "linear-gradient(135deg, rgba(245, 158, 11, 0.15), rgba(157, 78, 221, 0.15))";
+                    tierBtn.style.borderColor = "rgba(245, 158, 11, 0.4)";
+                    tierText.innerText = "Upgrade to Pro";
+                    tierText.style.color = "#f59e0b";
+                    tierIcon.innerText = "✨";
+                }
+            }
 
             // Update status pill & toggle button
             const dot = document.getElementById('status-dot');
@@ -2029,9 +2122,93 @@
             }
         }
 
+        // Modal Controls for 👑 Unlock TimeMeshin Pro
+        function openLicenseModal(requestedLvl) {
+            const modal = document.getElementById('license-modal');
+            const msg = document.getElementById('license-msg');
+            if (msg) {
+                if (requestedLvl && requestedLvl > 2) {
+                    msg.innerHTML = `<span style="color: #f59e0b;">Level ${requestedLvl} requires TimeMeshin Pro. Free tier covers Levels 1–2.</span>`;
+                } else {
+                    msg.innerText = '';
+                }
+            }
+            if (modal) {
+                modal.style.display = 'flex';
+                document.body.style.overflow = 'hidden';
+            }
+        }
+
+        function closeLicenseModal() {
+            const modal = document.getElementById('license-modal');
+            if (modal) {
+                modal.style.display = 'none';
+                document.body.style.overflow = 'auto';
+            }
+        }
+
+        async function submitLicenseKey() {
+            const input = document.getElementById('license-key-input');
+            const key = input ? input.value.trim() : '';
+            const msg = document.getElementById('license-msg');
+
+            if (!key) {
+                if (msg) msg.innerHTML = '<span style="color: #ef4444;">Please enter a valid license key.</span>';
+                return;
+            }
+
+            try {
+                const res = await fetch('/api/activate_license', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ key: key })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    isProUser = true;
+                    maxAllowedLevel = 6;
+                    if (msg) msg.innerHTML = `<span style="color: #10b981;">✓ ${data.message}</span>`;
+                    setTimeout(() => {
+                        closeLicenseModal();
+                        fetchLiveStatus();
+                    }, 1200);
+                } else {
+                    if (msg) msg.innerHTML = `<span style="color: #ef4444;">✗ ${data.message}</span>`;
+                }
+            } catch (err) {
+                if (msg) msg.innerHTML = `<span style="color: #ef4444;">Network error activating key: ${err}</span>`;
+            }
+        }
+
+        async function activateFounderTrial() {
+            document.getElementById('license-key-input').value = 'TM-PRO-FOUNDER-2026';
+            await submitLicenseKey();
+        }
+
+        async function downgradeToFree() {
+            if (!confirm("Revert to Community Free Tier? Active telemetry will drop to Level 2 (Episodic). Your past recorded Level 3-6 memories will remain 100% locally accessible.")) {
+                return;
+            }
+            try {
+                const res = await fetch('/api/downgrade_license', { method: 'POST' });
+                const data = await res.json();
+                isProUser = false;
+                maxAllowedLevel = 2;
+                currentDepthLevel = 2;
+                renderDialerUI(2);
+                renderLevelStation(2);
+                closeLicenseModal();
+                fetchLiveStatus();
+                alert("Downgraded to Community Free Tier (Level 2 active). Historical data preserved.");
+            } catch (e) {
+                alert("Failed to downgrade license: " + e);
+            }
+        }
+
         window.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') {
                 closeLevelGuideModal();
+                closeLicenseModal();
             }
         });
     </script>
