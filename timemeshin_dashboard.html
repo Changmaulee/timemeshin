@@ -530,6 +530,200 @@
             text-decoration: line-through;
         }
 
+        /* 📘 Architecture & Level Guide One-Pager Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(4, 6, 11, 0.88);
+            backdrop-filter: blur(18px);
+            z-index: 1000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+            animation: fadeIn 0.25s ease-out;
+        }
+
+        .modal-content {
+            background: linear-gradient(135deg, rgba(18, 24, 38, 0.98), rgba(10, 14, 24, 0.97));
+            border: 1px solid rgba(0, 229, 255, 0.4);
+            box-shadow: 0 0 50px rgba(0, 229, 255, 0.25), 0 20px 40px rgba(0,0,0,0.85);
+            border-radius: 16px;
+            max-width: 980px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        .modal-content::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .modal-content::-webkit-scrollbar-thumb {
+            background: rgba(0, 229, 255, 0.3);
+            border-radius: 6px;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 28px;
+            border-bottom: 1px solid var(--border-subtle);
+            position: sticky;
+            top: 0;
+            background: rgba(10, 14, 24, 0.96);
+            backdrop-filter: blur(16px);
+            z-index: 10;
+        }
+
+        .modal-header h2 {
+            font-size: 17px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .btn-close-modal {
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid var(--border-subtle);
+            color: var(--text-muted);
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-close-modal:hover {
+            background: rgba(239, 68, 68, 0.25);
+            color: var(--accent-crimson);
+            border-color: rgba(239, 68, 68, 0.5);
+            transform: scale(1.05);
+        }
+
+        .modal-body {
+            padding: 24px 28px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .guide-intro-banner {
+            background: linear-gradient(135deg, rgba(0, 229, 255, 0.08), rgba(157, 78, 221, 0.08));
+            border: 1px solid rgba(0, 229, 255, 0.25);
+            border-radius: 12px;
+            padding: 14px 18px;
+            font-size: 12px;
+            color: var(--text-secondary);
+            line-height: 1.5;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+        }
+
+        .level-card-guide {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--border-subtle);
+            border-radius: 12px;
+            padding: 16px 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            transition: all 0.2s;
+        }
+
+        .level-card-guide:hover {
+            border-color: rgba(0, 229, 255, 0.35);
+            background: rgba(0, 229, 255, 0.025);
+            transform: translateY(-1px);
+        }
+
+        .guide-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .guide-title {
+            font-size: 15px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .guide-pills {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .guide-grid-details {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-top: 4px;
+            font-size: 12px;
+        }
+
+        .guide-box {
+            background: rgba(0, 0, 0, 0.35);
+            padding: 10px 14px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .guide-box-title {
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            color: var(--accent-cyan);
+            margin-bottom: 2px;
+        }
+
+        .guide-box-desc {
+            font-size: 11.5px;
+            color: var(--text-primary);
+            line-height: 1.4;
+        }
+
+        .btn-dial-from-modal {
+            padding: 4px 10px;
+            border-radius: 6px;
+            background: rgba(0, 229, 255, 0.15);
+            border: 1px solid rgba(0, 229, 255, 0.4);
+            color: var(--accent-cyan);
+            font-size: 10.5px;
+            font-family: 'Fira Code', monospace;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .btn-dial-from-modal:hover {
+            background: var(--accent-cyan);
+            color: #000;
+            box-shadow: 0 0 10px rgba(0, 229, 255, 0.5);
+        }
+
         /* AI Omnibar Query Section */
         .omnibar-card {
             background: linear-gradient(135deg, rgba(18, 24, 38, 0.9), rgba(15, 23, 42, 0.85));
@@ -838,6 +1032,10 @@
         </div>
 
         <div class="controls">
+            <button class="github-link-btn" style="background: rgba(0, 229, 255, 0.12); border-color: rgba(0, 229, 255, 0.4); color: var(--accent-cyan); font-weight: 600;" onclick="openLevelGuideModal()" title="View 6-Level Depth Architecture One-Pager">
+                <span>📘</span> <span>Architecture Guide (One-Pager)</span>
+            </button>
+
             <a href="https://github.com/Changmaulee/timemeshin" target="_blank" class="github-link-btn" title="View Source on GitHub">
                 <span>⭐</span> <span>Star on GitHub</span>
             </a>
@@ -852,6 +1050,160 @@
             </button>
         </div>
     </header>
+
+    <!-- 📘 Architecture & Level Guide One-Pager Modal -->
+    <div class="modal-overlay" id="level-guide-modal" onclick="if(event.target===this) closeLevelGuideModal()">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><span>📘</span> TimeMeshin Cognitive Architecture & Depth Level Guide</h2>
+                <button class="btn-close-modal" onclick="closeLevelGuideModal()" title="Close (ESC)">✕</button>
+            </div>
+
+            <div class="modal-body">
+                <div class="guide-intro-banner">
+                    <div>
+                        <strong style="color: var(--text-primary); font-size: 13px;">Deterministic Spatio-Temporal Context ($S \times T$)</strong><br>
+                        TimeMeshin gives you granular, sovereign control over telemetry and cognitive context depth. Dial between ultra-light passive metadata (Level 1) up to omniscient counterfactual simulations (Level 6).
+                    </div>
+                    <div style="font-size: 11px; font-family: 'Fira Code', monospace; color: var(--accent-emerald); background: rgba(16,185,129,0.15); padding: 6px 12px; border-radius: 8px; border: 1px solid rgba(16,185,129,0.3); white-space: nowrap;">
+                        🔒 100% Local-First
+                    </div>
+                </div>
+
+                <!-- Level 1 -->
+                <div class="level-card-guide">
+                    <div class="guide-top">
+                        <div class="guide-title"><span style="color: #10b981;">⏱️</span> Level 1: Telemetry & App Focus</div>
+                        <div class="guide-pills">
+                            <span class="meta-pill cpu" style="color: #10b981; border-color: rgba(16,185,129,0.3);">CPU: &lt; 0.1%</span>
+                            <span class="meta-pill privacy">🔒 Ultra-Private Metadata</span>
+                            <button class="btn-dial-from-modal" onclick="setDepthLevel(1); closeLevelGuideModal();">🎛️ Dial to L1</button>
+                        </div>
+                    </div>
+                    <div class="guide-grid-details">
+                        <div class="guide-box">
+                            <div class="guide-box-title">🔍 What Is Captured:</div>
+                            <div class="guide-box-desc">• Active window titles & process executables (via native Win32/ctypes).<br>• Foreground task start/end timestamps and dwell time.<br>• User idle status detection (&gt;3 minutes inactive).</div>
+                        </div>
+                        <div class="guide-box">
+                            <div class="guide-box-title">🛡️ Privacy & Overhead:</div>
+                            <div class="guide-box-desc">• <strong>Zero content capture:</strong> No keystrokes, no file contents, no screenshots.<br>• Minimal storage footprint (~10 KB/day in SQLite WAL).</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Level 2 -->
+                <div class="level-card-guide">
+                    <div class="guide-top">
+                        <div class="guide-title"><span style="color: #00e5ff;">💬</span> Level 2: Narrative & Episodic Surface</div>
+                        <div class="guide-pills">
+                            <span class="meta-pill cpu">CPU: ~0.2%</span>
+                            <span class="meta-pill privacy">🔒 Episodic Prompts & Form State</span>
+                            <button class="btn-dial-from-modal" onclick="setDepthLevel(2); closeLevelGuideModal();">🎛️ Dial to L2</button>
+                        </div>
+                    </div>
+                    <div class="guide-grid-details">
+                        <div class="guide-box">
+                            <div class="guide-box-title">🔍 What Is Captured:</div>
+                            <div class="guide-box-desc">• AI Chat conversations (prompts & outputs) across Gemini Web, ChatGPT, Claude.<br>• <strong>Doctor Strange Time Stone:</strong> Closed tab URLs & form inputs (auto-restorable).<br>• Mobile speech-to-text voice memos and thoughts.</div>
+                        </div>
+                        <div class="guide-box">
+                            <div class="guide-box-title">🛡️ Privacy & Overhead:</div>
+                            <div class="guide-box-desc">• Saves unstructured thoughts and conversational context.<br>• Password and secret fields are excluded by the extension.</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Level 3 -->
+                <div class="level-card-guide">
+                    <div class="guide-top">
+                        <div class="guide-title"><span style="color: #10b981;">🧬</span> Level 3: AST & Code Mutation Lineage</div>
+                        <div class="guide-pills">
+                            <span class="meta-pill cpu">CPU: ~0.5%</span>
+                            <span class="meta-pill privacy">🔒 Code Structural Diffs</span>
+                            <button class="btn-dial-from-modal" onclick="setDepthLevel(3); closeLevelGuideModal();">🎛️ Dial to L3</button>
+                        </div>
+                    </div>
+                    <div class="guide-grid-details">
+                        <div class="guide-box">
+                            <div class="guide-box-title">🔍 What Is Captured:</div>
+                            <div class="guide-box-desc">• Python AST syntax trees on file save (classes, functions, method arguments).<br>• Myers structural diffs between code revisions.<br>• <strong>ShowLLM Cartridge Foundry:</strong> Compiles standalone Movie-Codec knowledge cartridges (.json).</div>
+                        </div>
+                        <div class="guide-box">
+                            <div class="guide-box-title">🛡️ Privacy & Overhead:</div>
+                            <div class="guide-box-desc">• Tracks structural code mutations without capturing system credentials or .env files.</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Level 4 -->
+                <div class="level-card-guide">
+                    <div class="guide-top">
+                        <div class="guide-title"><span style="color: #f59e0b;">⚙️</span> Level 4: OS Kernel & File I/O Tracing</div>
+                        <div class="guide-pills">
+                            <span class="meta-pill cpu" style="color: #f59e0b; border-color: rgba(245,158,11,0.3);">CPU: ~1.0%</span>
+                            <span class="meta-pill privacy">🔒 File Paths & Exit Codes</span>
+                            <button class="btn-dial-from-modal" onclick="setDepthLevel(4); closeLevelGuideModal();">🎛️ Dial to L4</button>
+                        </div>
+                    </div>
+                    <div class="guide-grid-details">
+                        <div class="guide-box">
+                            <div class="guide-box-title">🔍 What Is Captured:</div>
+                            <div class="guide-box-desc">• Real-time file system mutations (created, modified, deleted) via FileSystemWatcher.<br>• Terminal and subprocess execution status, commands, and exit codes.<br>• Causal linking between build/compiler failures and recent code edits.</div>
+                        </div>
+                        <div class="guide-box">
+                            <div class="guide-box-title">🛡️ Privacy & Overhead:</div>
+                            <div class="guide-box-desc">• Monitors project directory I/O paths and terminal exit statuses. Low-latency background watcher.</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Level 5 -->
+                <div class="level-card-guide">
+                    <div class="guide-top">
+                        <div class="guide-title"><span style="color: #ec4899;">👁️</span> Level 5: Multimodal Sensory Memory</div>
+                        <div class="guide-pills">
+                            <span class="meta-pill cpu" style="color: #ec4899; border-color: rgba(236,72,153,0.3);">CPU: ~2.5%</span>
+                            <span class="meta-pill privacy">🔒 Local Perceptual Buffers</span>
+                            <button class="btn-dial-from-modal" onclick="setDepthLevel(5); closeLevelGuideModal();">🎛️ Dial to L5</button>
+                        </div>
+                    </div>
+                    <div class="guide-grid-details">
+                        <div class="guide-box">
+                            <div class="guide-box-title">🔍 What Is Captured:</div>
+                            <div class="guide-box-desc">• Perceptual visual keyframe thumbnails (pHash) on visual scene shifts.<br>• On-device OCR screen text extraction for non-text windows (diagrams, IDE popups).<br>• Spoken audio speech transcription buffers.</div>
+                        </div>
+                        <div class="guide-box">
+                            <div class="guide-box-title">🛡️ Privacy & Overhead:</div>
+                            <div class="guide-box-desc">• <strong>100% On-Device:</strong> Visual and acoustic buffers remain in local storage. Zero cloud streaming.</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Level 6 -->
+                <div class="level-card-guide">
+                    <div class="guide-top">
+                        <div class="guide-title"><span style="color: #ef4444;">🔮</span> Level 6: Counterfactual Causal Simulation</div>
+                        <div class="guide-pills">
+                            <span class="meta-pill cpu" style="color: #ef4444; border-color: rgba(239,68,68,0.3);">CPU: ~4.0%</span>
+                            <span class="meta-pill privacy">🔒 Sovereign Temporal Sandbox</span>
+                            <button class="btn-dial-from-modal" onclick="setDepthLevel(6); closeLevelGuideModal();">🎛️ Dial to L6</button>
+                        </div>
+                    </div>
+                    <div class="guide-grid-details">
+                        <div class="guide-box">
+                            <div class="guide-box-title">🔍 What Is Captured:</div>
+                            <div class="guide-box-desc">• Non-destructive B-Frame branching in the spatio-temporal causal graph.<br>• Speculative What-If architectural hypotheses evaluation.<br>• <strong>Optimistic Concurrency Control (OCC):</strong> Automated collision detection across divergent timeline universes.</div>
+                        </div>
+                        <div class="guide-box">
+                            <div class="guide-box-title">🛡️ Privacy & Overhead:</div>
+                            <div class="guide-box-desc">• Runs in completely isolated speculative sandbox branches without mutating production state.</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <!-- Main Grid -->
     <main>
@@ -1643,6 +1995,29 @@
                 exportTimelineJSON();
             }
         }
+
+        // Modal Controls for 📘 One-Pager Architecture Guide
+        function openLevelGuideModal() {
+            const modal = document.getElementById('level-guide-modal');
+            if (modal) {
+                modal.style.display = 'flex';
+                document.body.style.overflow = 'hidden';
+            }
+        }
+
+        function closeLevelGuideModal() {
+            const modal = document.getElementById('level-guide-modal');
+            if (modal) {
+                modal.style.display = 'none';
+                document.body.style.overflow = 'auto';
+            }
+        }
+
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                closeLevelGuideModal();
+            }
+        });
     </script>
 </body>
 </html>
