@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>TimeMeshin Time Stone</title>
+    <style>
+        body {
+            width: 340px;
+            margin: 0;
+            padding: 16px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #07090e;
+            color: #f8fafc;
+        }
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding-bottom: 12px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 800;
+            font-size: 15px;
+            letter-spacing: -0.3px;
+        }
+        .pill {
+            font-size: 10px;
+            background: rgba(16, 185, 129, 0.15);
+            color: #10b981;
+            padding: 3px 8px;
+            border-radius: 12px;
+            border: 1px solid rgba(16, 185, 129, 0.4);
+            font-family: monospace;
+            font-weight: 700;
+        }
+        .section-title {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            color: #00e5ff;
+            margin-top: 14px;
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .history-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            max-height: 250px;
+            overflow-y: auto;
+        }
+        .history-card {
+            background: rgba(18, 24, 38, 0.9);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 10px;
+            padding: 10px 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .tab-title {
+            font-size: 12px;
+            font-weight: 600;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 200px;
+        }
+        .tab-time {
+            font-size: 10px;
+            font-family: monospace;
+            color: #94a3b8;
+        }
+        .tab-meta {
+            font-size: 11px;
+            color: #94a3b8;
+            display: flex;
+            gap: 6px;
+        }
+        .badge-inputs {
+            background: rgba(0, 229, 255, 0.15);
+            color: #00e5ff;
+            padding: 1px 6px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-family: monospace;
+        }
+        .btn-restore {
+            background: linear-gradient(135deg, #10b981, #00e5ff);
+            color: #000;
+            font-weight: 700;
+            border: none;
+            border-radius: 6px;
+            padding: 6px 10px;
+            font-size: 11px;
+            cursor: pointer;
+            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+        }
+        .btn-restore:active {
+            transform: scale(0.97);
+        }
+        .empty-text {
+            font-size: 11px;
+            color: #64748b;
+            text-align: center;
+            padding: 14px 0;
+        }
+        .btn-dashboard {
+            display: block;
+            width: 100%;
+            margin-top: 14px;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            color: #f8fafc;
+            font-weight: 600;
+            text-align: center;
+            border-radius: 8px;
+            text-decoration: none;
+            font-size: 11px;
+            box-sizing: border-box;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="brand">
+            <span>??</span> Time Stone DVR
+        </div>
+        <div class="pill">CRASH-PROOF</div>
+    </div>
+
+    <div class="section-title">
+        <span>? Closed & Crashed Tabs</span>
+        <span id="tab-count" style="color: #94a3b8;">0 tabs</span>
+    </div>
+
+    <div class="history-list" id="history-list">
+        <div class="empty-text">Monitoring tabs... Closed windows will appear here.</div>
+    </div>
+
+    <a href="http://localhost:8765" target="_blank" class="btn-dashboard">??? Open TimeMeshin Dashboard</a>
+
+    <script src="popup.js"></script>
+</body>
+</html>
