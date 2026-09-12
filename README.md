@@ -1,4 +1,5 @@
 # TimeMeshin (v0.2.1)
+### Point-in-Time Ground Truth ($t \le T$) & Causal Lineage Substrate for Autonomous AI & LLMs aka
 > **Deterministic Spatio-Temporal ($S \times T$) Context Engine & Episodic Memory Substrate for AI Agents**  
 > *Authored by Chandramouli ([@Changmaulee](https://github.com/Changmaulee)) &bull; Contact: [yellowbridgeconnections@gmail.com](mailto:yellowbridgeconnections@gmail.com)*
 
@@ -131,4 +132,15 @@ Building an autonomous coding agent, DevOps copilot, or stateful RAG pipeline? W
 
 ## 📄 License
 TimeMeshin is open-sourced under the [FSL-1.1-Apache-2.0 License](LICENSE).
+**Indian Patent Application No. 202641107532 (CBR Date: Sept 7, 2026)**  
+**Author & Lead Architect**: Chandramouli (@Changmaulee)  
+**License**: Functional Source License (**FSL-1.1-MIT**) & Commercial Enterprise
+
+⚖️ License & Intellectual Property Notice
+Patented System: The underlying spatio-temporal spherocylinder memory structures, Voronoi director routing, and continuous-discrete temporal attention methods are protected under Indian Patent Application No. 202641107532 (CBR Date: September 7, 2026).
+Functional Source License (FSL-1.1-MIT):
+Source Available & Non-Competing Use: Free for developers, researchers, academic study, and non-competing internal integrations.
+Commercial Restriction: Prohibits third parties from hosting or providing TimeMeshin as a commercial SaaS, cloud context service, or competing API product without a commercial license.
+Automatic Conversion: Automatically transitions to the standard MIT License two years after each release.
+For commercial licensing, enterprise SLAs, or sovereign government deployments, contact Lead Architect Chandramouli.
 
