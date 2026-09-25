@@ -69,8 +69,9 @@ Homepage = "https://github.com/Changmaulee/timemeshin"
 Repository = "https://github.com/Changmaulee/timemeshin"
 "Bug Tracker" = "https://github.com/Changmaulee/timemeshin/issues"
 
-[tool.setuptools]
-packages = ["timemeshin", "timemeshin.ingestion", "timemeshin.server"]
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["timemeshin*", "timemesh_lang*"]
 
 [tool.setuptools.package-data]
 "*" = ["*.json", "*.md", "*.html"]

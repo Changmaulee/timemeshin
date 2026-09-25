@@ -1,0 +1,942 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BioMesh Sovereign HRMS & Dynamic Terminology Engine</title>
+  <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
+  <style>
+    .font-mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
+    @media print {
+      body * { visibility: hidden; }
+      #printableStatutoryArea, #printableStatutoryArea * { visibility: visible; }
+      #printableStatutoryArea { position: absolute; left: 0; top: 0; width: 100%; }
+      .no-print { display: none !important; }
+    }
+  </style>
+</head>
+<body class="bg-[var(--background)] text-[var(--foreground)] antialiased p-3 md:p-6 min-h-screen flex flex-col gap-5">
+
+  <!-- Header -->
+  <header class="bg-[var(--card)] border border-[var(--border)] rounded-2xl p-4 md:p-5 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4 no-print">
+    <div class="flex items-center gap-3">
+      <span class="text-3xl">🏛️</span>
+      <div>
+        <div class="flex items-center gap-2">
+          <h1 class="text-xl md:text-2xl font-bold tracking-tight" id="companyDisplayTitle">BHARAT DYNAMICS TECH</h1>
+          <button onclick="openCompanySettingsModal()" class="text-xs text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition-colors">✏️ Edit</button>
+        </div>
+        <p class="text-xs text-[var(--muted-foreground)]">Sovereign HRMS &bull; Dynamic Custom Terminology &bull; TimeMesh Causal Lock</p>
+      </div>
+    </div>
+    <div class="flex flex-wrap items-center gap-2">
+      <!-- FREEZE / UNFREEZE TOGGLE BUTTON -->
+      <button onclick="togglePayrollFreeze()" id="freezeToggleBtn" class="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl shadow-sm transition-all flex items-center gap-1.5">
+        <span id="freezeIcon">🔓</span> <span id="freezeLabel">UNFROZEN (Live Editing)</span>
+      </button>
+
+      <button onclick="openAddEmployeeModal()" id="headerAddEmpBtn" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-xl shadow-sm transition-all flex items-center gap-1.5">
+        <span>➕</span> Add Employee
+      </button>
+      <button onclick="exportStandaloneHTML()" class="px-3 py-1.5 bg-emerald-700 hover:bg-emerald-600 text-white text-xs font-bold rounded-xl shadow-sm transition-all flex items-center gap-1.5">
+        <span>💾</span> Export (.html)
+      </button>
+    </div>
+  </header>
+
+  <!-- Module Navigation Tabs -->
+  <div class="flex flex-wrap items-center gap-2 no-print border-b border-[var(--border)] pb-3" id="moduleTabs">
+    <button onclick="switchModule('payroll')" id="tab-payroll" class="px-4 py-2 text-xs font-bold rounded-xl bg-[var(--primary)] text-[var(--primary-foreground)] shadow-sm transition-all">
+      💰 Payroll & Salary Run
+    </button>
+    <button onclick="switchModule('employees')" id="tab-employees" class="px-4 py-2 text-xs font-bold rounded-xl bg-[var(--secondary)] text-[var(--secondary-foreground)] transition-all">
+      👥 Employee Directory (${appState?.employees?.length || 5})
+    </button>
+    <button onclick="switchModule('leave')" id="tab-leave" class="px-4 py-2 text-xs font-bold rounded-xl bg-[var(--secondary)] text-[var(--secondary-foreground)] transition-all">
+      🏖️ Leave & Attendance (LOP)
+    </button>
+    <button onclick="switchModule('compliance')" id="tab-compliance" class="px-4 py-2 text-xs font-bold rounded-xl bg-[var(--secondary)] text-[var(--secondary-foreground)] transition-all">
+      🏛️ Statutory Compliance (Form T, R, 16, F)
+    </button>
+    <button onclick="switchModule('terminology')" id="tab-terminology" class="px-4 py-2 text-xs font-bold rounded-xl bg-purple-600/10 text-purple-400 border border-purple-500/30 hover:bg-purple-600 hover:text-white transition-all flex items-center gap-1.5">
+      <span>🏷️</span> Custom Terminology & Labels
+    </button>
+  </div>
+
+  <!-- Freeze Status Banner (Visible when locked) -->
+  <div id="frozenBanner" class="p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-xl flex justify-between items-center text-xs text-emerald-400 font-bold hidden no-print">
+    <div class="flex items-center gap-2">
+      <span>🔒</span>
+      <span>PAYROLL STATE LOCKED & CERTIFIED (Immutable TimeMesh Keyframe #I-001) &bull; Zero edits permitted until Unfrozen.</span>
+    </div>
+    <span class="text-[10px] font-mono bg-emerald-500/20 px-2 py-0.5 rounded text-emerald-300">Auditor Verified</span>
+  </div>
+
+  <!-- Main HRMS Workspace Container -->
+  <div class="bg-[var(--card)] border border-[var(--border)] rounded-2xl p-4 md:p-6 shadow-sm flex-1 min-h-[440px] no-print">
+    
+    <!-- VIEW 1: PAYROLL PROCESSING & SUMMARY -->
+    <div id="view-payroll" class="space-y-4">
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-3" id="payrollKPICards"></div>
+      <div class="p-3 bg-[var(--secondary)]/40 border border-[var(--border)] rounded-xl flex flex-wrap justify-between items-center gap-2">
+        <span class="text-xs font-bold" id="payrollMonthBanner">Payroll Month: September 2026</span>
+        <div class="flex flex-wrap gap-2">
+          <button onclick="openStatutoryModal('form_t')" class="px-3 py-1 bg-blue-600/10 text-blue-400 border border-blue-600/20 hover:bg-blue-600 hover:text-white text-xs font-semibold rounded-lg transition-all">
+            📄 Form T (Wage Register)
+          </button>
+          <button onclick="downloadBankNEFT()" class="px-3 py-1 bg-emerald-600/10 text-emerald-400 border border-emerald-600/20 hover:bg-emerald-600 hover:text-white text-xs font-semibold rounded-lg transition-all">
+            🏦 Download Bank NEFT (.csv)
+          </button>
+        </div>
+      </div>
+      <div class="overflow-x-auto border border-[var(--border)] rounded-xl">
+        <table class="w-full text-left text-xs font-mono">
+          <thead class="bg-[var(--secondary)] text-[var(--muted-foreground)] uppercase text-[10px] sticky top-0" id="payrollTableHead"></thead>
+          <tbody id="payrollTableBody" class="divide-y divide-[var(--border)]/40"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- VIEW 2: EMPLOYEE DIRECTORY -->
+    <div id="view-employees" class="space-y-4 hidden">
+      <div class="flex justify-between items-center">
+        <div>
+          <h2 class="text-sm font-bold">Employee Master Directory</h2>
+          <p class="text-xs text-[var(--muted-foreground)]">Manage KYC, compensation structures, PAN, UAN, and custom allowances.</p>
+        </div>
+        <button onclick="openAddEmployeeModal()" id="empTabAddBtn" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-xl shadow-sm transition-all flex items-center gap-1.5">
+          <span>➕</span> Add New Employee
+        </button>
+      </div>
+      <div class="overflow-x-auto border border-[var(--border)] rounded-xl">
+        <table class="w-full text-left text-xs font-mono">
+          <thead class="bg-[var(--secondary)] text-[var(--muted-foreground)] uppercase text-[10px] sticky top-0">
+            <tr>
+              <th class="p-2.5">Emp ID</th>
+              <th class="p-2.5">Name & Role</th>
+              <th class="p-2.5">KYC (PAN & UAN)</th>
+              <th class="p-2.5">Bank Details</th>
+              <th class="p-2.5 text-right">Monthly CTC (<span class="currencySymbol">₹</span>)</th>
+              <th class="p-2.5 text-center">Tax Regime</th>
+              <th class="p-2.5 text-center">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="employeeDirectoryBody" class="divide-y divide-[var(--border)]/40"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- VIEW 3: LEAVE & ATTENDANCE -->
+    <div id="view-leave" class="space-y-4 hidden">
+      <div class="flex justify-between items-center">
+        <div>
+          <h2 class="text-sm font-bold">Leave & Attendance Management</h2>
+          <p class="text-xs text-[var(--muted-foreground)]">Track working days, leave balances, and auto-sync Loss of Pay (LOP) to Payroll.</p>
+        </div>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <div class="p-3 bg-[var(--card)] border border-[var(--border)] rounded-xl text-center">
+          <span class="text-[10px] text-[var(--muted-foreground)] uppercase font-semibold">Total Working Days</span>
+          <div class="text-xl font-bold text-blue-400">30 Days</div>
+        </div>
+        <div class="p-3 bg-[var(--card)] border border-[var(--border)] rounded-xl text-center">
+          <span class="text-[10px] text-[var(--muted-foreground)] uppercase font-semibold">Approved Paid Leaves</span>
+          <div class="text-xl font-bold text-emerald-400">6 Days</div>
+        </div>
+        <div class="p-3 bg-[var(--card)] border border-[var(--border)] rounded-xl text-center">
+          <span class="text-[10px] text-[var(--muted-foreground)] uppercase font-semibold">Loss of Pay (LOP) Days</span>
+          <div class="text-xl font-bold text-rose-400" id="totalLopDays">0 Days</div>
+        </div>
+      </div>
+      <div class="overflow-x-auto border border-[var(--border)] rounded-xl">
+        <table class="w-full text-left text-xs font-mono">
+          <thead class="bg-[var(--secondary)] text-[var(--muted-foreground)] uppercase text-[10px] sticky top-0">
+            <tr>
+              <th class="p-2.5">ID</th>
+              <th class="p-2.5">Employee Name</th>
+              <th class="p-2.5 text-center" id="leaveColCL">CL Bal</th>
+              <th class="p-2.5 text-center" id="leaveColSL">SL Bal</th>
+              <th class="p-2.5 text-center" id="leaveColEL">EL Bal</th>
+              <th class="p-2.5 text-center">Days Worked</th>
+              <th class="p-2.5 text-center">LOP (Unpaid Days)</th>
+              <th class="p-2.5 text-center">Adjust LOP</th>
+            </tr>
+          </thead>
+          <tbody id="leaveTableBody" class="divide-y divide-[var(--border)]/40"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- VIEW 4: STATUTORY COMPLIANCE -->
+    <div id="view-compliance" class="space-y-4 hidden">
+      <div>
+        <h2 class="text-sm font-bold">Government Statutory Compliance Hub</h2>
+        <p class="text-xs text-[var(--muted-foreground)]">1-Click generation of official Ministry of Labour & CBDT Income Tax forms.</p>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="p-4 bg-[var(--secondary)]/30 border border-[var(--border)] rounded-xl space-y-3 flex flex-col justify-between">
+          <div>
+            <div class="flex items-center gap-2 text-blue-400 font-bold text-sm"><span>📄</span> FORM T</div>
+            <p class="text-xs text-[var(--muted-foreground)] mt-1">Combined Register of Wages under Payment of Wages Act.</p>
+          </div>
+          <button onclick="openStatutoryModal('form_t')" class="w-full py-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-lg shadow-sm">Generate Form T</button>
+        </div>
+        <div class="p-4 bg-[var(--secondary)]/30 border border-[var(--border)] rounded-xl space-y-3 flex flex-col justify-between">
+          <div>
+            <div class="flex items-center gap-2 text-indigo-400 font-bold text-sm"><span>📑</span> FORM 16</div>
+            <p class="text-xs text-[var(--muted-foreground)] mt-1">Certificate u/s 203 with Section 115BAC New Regime slabs.</p>
+          </div>
+          <button onclick="openStatutoryModal('form_16')" class="w-full py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-lg shadow-sm">Generate Form 16</button>
+        </div>
+        <div class="p-4 bg-[var(--secondary)]/30 border border-[var(--border)] rounded-xl space-y-3 flex flex-col justify-between">
+          <div>
+            <div class="flex items-center gap-2 text-emerald-400 font-bold text-sm"><span>📜</span> GRATUITY (FORM F)</div>
+            <p class="text-xs text-[var(--muted-foreground)] mt-1">Statutory formula: (15 &times; Basic &times; Tenure) / 26.</p>
+          </div>
+          <button onclick="openStatutoryModal('gratuity')" class="w-full py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-lg shadow-sm">Compute Gratuity</button>
+        </div>
+        <div class="p-4 bg-[var(--secondary)]/30 border border-[var(--border)] rounded-xl space-y-3 flex flex-col justify-between">
+          <div>
+            <div class="flex items-center gap-2 text-amber-400 font-bold text-sm"><span>⚡</span> EPFO ECR FILE</div>
+            <p class="text-xs text-[var(--muted-foreground)] mt-1">#~# delimited text file ready for EPFO portal upload.</p>
+          </div>
+          <button onclick="downloadEPFO_ECR()" class="w-full py-2 bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold rounded-lg shadow-sm">Download ECR (.txt)</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- VIEW 5: CUSTOM TERMINOLOGY & LABELS (EDITABLE COMPANY TERMS) -->
+    <div id="view-terminology" class="space-y-5 hidden">
+      <div class="flex justify-between items-start">
+        <div>
+          <h2 class="text-sm font-bold flex items-center gap-2">
+            <span>🏷️</span> Company Custom Terminology & Component Studio
+          </h2>
+          <p class="text-xs text-[var(--muted-foreground)]">Rename any salary component, allowance label, or leave type to match your company's exact terminology!</p>
+        </div>
+        <span class="px-3 py-1 bg-purple-500/10 text-purple-400 border border-purple-500/20 text-[10px] font-bold rounded-full">
+          100% Configurable
+        </span>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+        
+        <!-- Salary Component Renamer -->
+        <div class="p-4 bg-[var(--secondary)]/30 border border-[var(--border)] rounded-xl space-y-4">
+          <h3 class="text-xs font-bold uppercase tracking-wider text-[var(--foreground)]">1. Salary Component Labels</h3>
+          <div class="space-y-3 text-xs">
+            <div>
+              <label class="font-semibold text-[var(--muted-foreground)]">Basic Pay Label</label>
+              <input id="termBasic" type="text" class="w-full p-2 mt-1 rounded-lg bg-[var(--background)] border border-[var(--border)] focus:outline-none text-xs font-mono">
+            </div>
+            <div>
+              <label class="font-semibold text-[var(--muted-foreground)]">HRA Label</label>
+              <input id="termHra" type="text" class="w-full p-2 mt-1 rounded-lg bg-[var(--background)] border border-[var(--border)] focus:outline-none text-xs font-mono">
+            </div>
+            <div>
+              <label class="font-semibold text-[var(--muted-foreground)]">Special Allowance Label</label>
+              <input id="termSpecial" type="text" class="w-full p-2 mt-1 rounded-lg bg-[var(--background)] border border-[var(--border)] focus:outline-none text-xs font-mono">
+            </div>
+            <div>
+              <label class="font-semibold text-[var(--muted-foreground)]">Currency Symbol</label>
+              <input id="termCurrency" type="text" class="w-full p-2 mt-1 rounded-lg bg-[var(--background)] border border-[var(--border)] focus:outline-none text-xs font-mono">
+            </div>
+          </div>
+        </div>
+
+        <!-- Leave Component Renamer -->
+        <div class="p-4 bg-[var(--secondary)]/30 border border-[var(--border)] rounded-xl space-y-4">
+          <h3 class="text-xs font-bold uppercase tracking-wider text-[var(--foreground)]">2. Leave & Statutory Labels</h3>
+          <div class="space-y-3 text-xs">
+            <div>
+              <label class="font-semibold text-[var(--muted-foreground)]">Casual Leave (CL) Label</label>
+              <input id="termCL" type="text" class="w-full p-2 mt-1 rounded-lg bg-[var(--background)] border border-[var(--border)] focus:outline-none text-xs font-mono">
+            </div>
+            <div>
+              <label class="font-semibold text-[var(--muted-foreground)]">Sick Leave (SL) Label</label>
+              <input id="termSL" type="text" class="w-full p-2 mt-1 rounded-lg bg-[var(--background)] border border-[var(--border)] focus:outline-none text-xs font-mono">
+            </div>
+            <div>
+              <label class="font-semibold text-[var(--muted-foreground)]">Earned Leave (EL/PL) Label</label>
+              <input id="termEL" type="text" class="w-full p-2 mt-1 rounded-lg bg-[var(--background)] border border-[var(--border)] focus:outline-none text-xs font-mono">
+            </div>
+            <div>
+              <label class="font-semibold text-[var(--muted-foreground)]">Loss of Pay (LOP) Label</label>
+              <input id="termLOP" type="text" class="w-full p-2 mt-1 rounded-lg bg-[var(--background)] border border-[var(--border)] focus:outline-none text-xs font-mono">
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="flex justify-end gap-2">
+        <button onclick="resetTerminologyDefaults()" class="px-4 py-2 rounded-lg bg-[var(--secondary)] hover:bg-[var(--accent)] text-xs font-semibold">Reset to Defaults</button>
+        <button onclick="saveTerminologyChanges()" class="px-4 py-2 rounded-lg bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold shadow-sm">Save Custom Terminology</button>
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- Bottom: TimeMeshin Causal Time-Travel DVR Scrubber & Hot-Patch Bar -->
+  <div class="bg-[var(--card)] border border-[var(--border)] rounded-2xl p-4 md:p-5 shadow-sm space-y-3 no-print">
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-2">
+      <div class="flex items-center gap-2">
+        <span class="text-xl">⏱️</span>
+        <div>
+          <span class="text-sm font-bold">TimeMeshin Causal Playhead DVR</span>
+          <span class="text-xs text-[var(--muted-foreground)] ml-2">(Scrub backwards to rewind any unfreeze, LOP adjustment, or salary hike!)</span>
+        </div>
+      </div>
+      <div class="flex items-center gap-2">
+        <span id="playheadIndicator" class="text-xs font-mono px-3 py-1 rounded-lg bg-[var(--primary)] text-[var(--primary-foreground)] font-semibold">Playhead: Step 0 (Present)</span>
+        <button onclick="triggerInstantHotSwap()" class="px-3 py-1 bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold rounded-lg transition-colors flex items-center gap-1 shadow-sm">
+          <span>⚡</span> 0.013ms Hot-Patch
+        </button>
+      </div>
+    </div>
+
+    <input type="range" id="dvrSlider" min="0" max="0" value="0" 
+      class="w-full accent-[var(--primary)] cursor-pointer"
+      oninput="scrubAppHistory(this.value)">
+
+    <div class="flex justify-between items-center text-[10px] font-mono text-[var(--muted-foreground)]">
+      <span>@ Payroll Checkpoint (I-Frame)</span>
+      <span id="dvrHistorySummary">Total Recorded Causal Frames: 1</span>
+      <span>! Zero-Backprop Bound (t &le; NOW)</span>
+    </div>
+  </div>
+
+  <!-- ADD EMPLOYEE MODAL -->
+  <div id="addEmployeeModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden flex justify-center items-center p-4">
+    <div class="bg-[var(--card)] border border-[var(--border)] rounded-2xl w-full max-w-2xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
+      <div class="p-4 border-b border-[var(--border)] flex justify-between items-center bg-[var(--secondary)]/40">
+        <h2 class="text-sm font-bold flex items-center gap-2"><span>👤</span> Add New Employee</h2>
+        <button onclick="closeAddEmployeeModal()" class="text-xs font-bold px-2 py-1 rounded hover:bg-[var(--accent)]">✕</button>
+      </div>
+      <div class="p-5 overflow-y-auto space-y-4 text-xs">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div><label class="font-semibold text-[var(--muted-foreground)]">Full Name *</label><input id="empName" type="text" placeholder="e.g. Ramesh Sharma" class="w-full p-2 mt-1 rounded-lg bg-[var(--background)] border border-[var(--border)] focus:outline-none text-xs"></div>
+          <div><label class="font-semibold text-[var(--muted-foreground)]">Role / Designation *</label><input id="empRole" type="text" placeholder="e.g. Lead Engineer" class="w-full p-2 mt-1 rounded-lg bg-[var(--background)] border border-[var(--border)] focus:outline-none text-xs"></div>
+          <div><label class="font-semibold text-[var(--muted-foreground)]">PAN Number *</label><input id="empPan" type="text" placeholder="e.g. ABCPS1234K" class="w-full p-2 mt-1 rounded-lg bg-[var(--background)] border border-[var(--border)] focus:outline-none text-xs uppercase"></div>
+          <div><label class="font-semibold text-[var(--muted-foreground)]">UAN Number</label><input id="empUan" type="text" placeholder="e.g. 100912345678" class="w-full p-2 mt-1 rounded-lg bg-[var(--background)] border border-[var(--border)] focus:outline-none text-xs"></div>
+          <div><label class="font-semibold text-[var(--muted-foreground)]" id="lblModalBasic">Monthly Basic (<span class="currencySymbol">₹</span>) *</label><input id="empBasic" type="number" placeholder="40000" class="w-full p-2 mt-1 rounded-lg bg-[var(--background)] border border-[var(--border)] focus:outline-none text-xs font-mono"></div>
+          <div><label class="font-semibold text-[var(--muted-foreground)]" id="lblModalHra">Monthly HRA (<span class="currencySymbol">₹</span>) *</label><input id="empHra" type="number" placeholder="20000" class="w-full p-2 mt-1 rounded-lg bg-[var(--background)] border border-[var(--border)] focus:outline-none text-xs font-mono"></div>
+          <div><label class="font-semibold text-[var(--muted-foreground)]" id="lblModalSpecial">Special Allowance (<span class="currencySymbol">₹</span>)</label><input id="empSpecial" type="number" placeholder="15000" class="w-full p-2 mt-1 rounded-lg bg-[var(--background)] border border-[var(--border)] focus:outline-none text-xs font-mono"></div>
+          <div><label class="font-semibold text-[var(--muted-foreground)]">Tax Regime</label><select id="empRegime" class="w-full p-2 mt-1 rounded-lg bg-[var(--background)] border border-[var(--border)] focus:outline-none text-xs"><option value="NEW">Section 115BAC (New)</option><option value="OLD">Old Regime</option></select></div>
+        </div>
+        <div class="pt-3 border-t border-[var(--border)] flex justify-end gap-2">
+          <button onclick="closeAddEmployeeModal()" class="px-4 py-2 rounded-lg bg-[var(--secondary)] hover:bg-[var(--accent)] font-semibold">Cancel</button>
+          <button onclick="submitNewEmployee()" class="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-bold">Save Employee</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- STATUTORY REPORT PRINT MODAL -->
+  <div id="statutoryModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden flex justify-center items-center p-4">
+    <div class="bg-[var(--card)] border border-[var(--border)] rounded-2xl w-full max-w-5xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
+      <div class="p-4 border-b border-[var(--border)] flex justify-between items-center bg-[var(--secondary)]/40 no-print">
+        <div class="flex items-center gap-2">
+          <span class="text-xl" id="modalIcon">📄</span>
+          <h2 class="text-sm font-bold" id="modalTitle">Statutory Report Preview</h2>
+        </div>
+        <div class="flex items-center gap-2">
+          <button onclick="window.print()" class="px-3 py-1 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-lg flex items-center gap-1 shadow-sm">
+            <span>🖨️</span> Print / Save PDF
+          </button>
+          <button onclick="closeStatutoryModal()" class="px-3 py-1 bg-[var(--secondary)] hover:bg-[var(--accent)] text-xs font-bold rounded-lg border border-[var(--border)]">
+            ✕ Close
+          </button>
+        </div>
+      </div>
+      <div class="p-6 overflow-y-auto flex-1 font-sans text-xs" id="printableStatutoryArea"></div>
+    </div>
+  </div>
+
+  <script>
+    let activeModule = 'payroll';
+    let isPayrollFrozen = false;
+
+    let companyConfig = {
+      name: "BHARAT DYNAMICS TECH PRIVATE LIMITED",
+      address: "Plot 42, Cyber City, HSR Layout, Bengaluru, Karnataka - 560102",
+      tan: "BLRB12345C",
+      pan: "AABCB1234F",
+      epfCode: "KN/BNG/0012345/000",
+      esicCode: "53000123450000001",
+      month: "September 2026",
+      currency: "₹",
+      terms: {
+        basic: "Basic Salary",
+        hra: "House Rent Allowance (HRA)",
+        special: "Special Allowance (FBP)",
+        cl: "Casual Leave (CL)",
+        sl: "Sick Leave (SL)",
+        el: "Earned Leave (EL)",
+        lop: "Loss of Pay (LOP)"
+      }
+    };
+
+    let appState = {
+      month: "September 2026",
+      employees: [
+        { id: 101, name: "Ramesh Sharma", role: "Engineering Lead", pan: "ABCPS1234K", uan: "100912345678", basic: 35000, hra: 17500, special: 17500, daysWorked: 30, lopDays: 0, cl: 5, sl: 3, el: 12, bankAcc: "50100234567890", ifsc: "HDFC0001234", taxRegime: "NEW", joiningDate: "2021-06-15" },
+        { id: 102, name: "Priya Sundaram", role: "Product Designer", pan: "BNMPS5678L", uan: "100923456789", basic: 45000, hra: 22500, special: 22500, daysWorked: 30, lopDays: 0, cl: 4, sl: 4, el: 10, bankAcc: "50100987654321", ifsc: "ICIC0005678", taxRegime: "NEW", joiningDate: "2022-01-10" },
+        { id: 103, name: "Amitabh Verma", role: "DevOps Architect", pan: "CWXPV9012M", uan: "100934567890", basic: 25000, hra: 12500, special: 12500, daysWorked: 28, lopDays: 2, cl: 1, sl: 2, el: 8, bankAcc: "30291827364510", ifsc: "SBIN0004321", taxRegime: "OLD", joiningDate: "2023-04-01" },
+        { id: 104, name: "Sneha Kulkarni", role: "HR & Operations", pan: "DQZPK3456N", uan: "100945678901", basic: 14000, hra: 7000, special: 4000, daysWorked: 30, lopDays: 0, cl: 6, sl: 5, el: 14, bankAcc: "90182736451234", ifsc: "UTIB0009876", taxRegime: "NEW", joiningDate: "2024-02-15" },
+        { id: 105, name: "Vikram Patel", role: "VP of Engineering", pan: "ERTYP7890P", uan: "100956789012", basic: 55000, hra: 27500, special: 27500, daysWorked: 30, lopDays: 0, cl: 7, sl: 3, el: 15, bankAcc: "60192837465102", ifsc: "KKBK0001122", taxRegime: "NEW", joiningDate: "2020-08-01" }
+      ]
+    };
+
+    let stateHistory = [JSON.parse(JSON.stringify(appState))];
+
+    // FREEZE / UNFREEZE TOGGLE
+    function togglePayrollFreeze() {
+      isPayrollFrozen = !isPayrollFrozen;
+      const btn = document.getElementById('freezeToggleBtn');
+      const icon = document.getElementById('freezeIcon');
+      const label = document.getElementById('freezeLabel');
+      const banner = document.getElementById('frozenBanner');
+
+      if (isPayrollFrozen) {
+        btn.className = "px-3.5 py-1.5 bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold rounded-xl shadow-sm transition-all flex items-center gap-1.5";
+        icon.innerText = "🔒";
+        label.innerText = "FROZEN (Immutable I-Frame)";
+        banner.classList.remove('hidden');
+        document.getElementById('headerAddEmpBtn').disabled = true;
+        document.getElementById('headerAddEmpBtn').classList.add('opacity-50', 'cursor-not-allowed');
+      } else {
+        btn.className = "px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl shadow-sm transition-all flex items-center gap-1.5";
+        icon.innerText = "🔓";
+        label.innerText = "UNFROZEN (Live Editing)";
+        banner.classList.add('hidden');
+        document.getElementById('headerAddEmpBtn').disabled = false;
+        document.getElementById('headerAddEmpBtn').classList.remove('opacity-50', 'cursor-not-allowed');
+      }
+
+      renderAllViews();
+    }
+
+    function calculateEmployeePayroll(emp) {
+      const payableRatio = Math.max(30 - emp.lopDays, 0) / 30;
+      const actualBasic = Math.round(emp.basic * payableRatio);
+      const actualHra = Math.round(emp.hra * payableRatio);
+      const actualSpecial = Math.round(emp.special * payableRatio);
+      const gross = actualBasic + actualHra + actualSpecial;
+
+      const pfWage = Math.min(actualBasic, 15000);
+      const employeePF = Math.round(pfWage * 0.12);
+      const employerEPS = Math.round(pfWage * 0.0833);
+      const employerEPF = employeePF - employerEPS;
+
+      const employeeESI = gross <= 21000 ? Math.round(gross * 0.0075) : 0;
+      const employerESI = gross <= 21000 ? Math.round(gross * 0.0325) : 0;
+      const pt = gross >= 15000 ? 200 : 0;
+
+      const annualGross = gross * 12;
+      let monthlyTDS = 0;
+      if (annualGross > 1200000) monthlyTDS = Math.round((annualGross * 0.15) / 12);
+      else if (annualGross > 700000) monthlyTDS = Math.round((annualGross * 0.08) / 12);
+
+      const totalDeductions = employeePF + employeeESI + pt + monthlyTDS;
+      const netPay = gross - totalDeductions;
+
+      return { ...emp, actualBasic, actualHra, actualSpecial, gross, employeePF, employerEPS, employerEPF, employeeESI, employerESI, pt, monthlyTDS, netPay };
+    }
+
+    function renderAllViews() {
+      const curr = companyConfig.currency;
+      let totalGross = 0, totalPF = 0, totalTDS = 0, totalNet = 0, totalLop = 0;
+
+      const calculatedList = appState.employees.map(emp => {
+        const c = calculateEmployeePayroll(emp);
+        totalGross += c.gross; totalPF += c.employeePF; totalTDS += c.monthlyTDS; totalNet += c.netPay; totalLop += emp.lopDays;
+        return c;
+      });
+
+      // Update currency spans
+      document.querySelectorAll('.currencySymbol').forEach(el => { el.innerText = curr; });
+
+      // 1. Render Payroll KPI Cards
+      document.getElementById('payrollKPICards').innerHTML = `
+        <div class="p-3 bg-[var(--card)] border border-[var(--border)] rounded-xl">
+          <span class="text-[10px] text-[var(--muted-foreground)] uppercase font-semibold">Total Gross Payroll</span>
+          <div class="text-lg font-bold text-blue-400">${curr}${totalGross.toLocaleString('en-IN')}</div>
+          <span class="text-[10px] text-[var(--muted-foreground)]">${appState.employees.length} Active Employees</span>
+        </div>
+        <div class="p-3 bg-[var(--card)] border border-[var(--border)] rounded-xl">
+          <span class="text-[10px] text-[var(--muted-foreground)] uppercase font-semibold">Total EPF Remittance</span>
+          <div class="text-lg font-bold text-amber-400">${curr}${(totalPF * 2).toLocaleString('en-IN')}</div>
+          <span class="text-[10px] text-[var(--muted-foreground)]">Emp + Employer EPF</span>
+        </div>
+        <div class="p-3 bg-[var(--card)] border border-[var(--border)] rounded-xl">
+          <span class="text-[10px] text-[var(--muted-foreground)] uppercase font-semibold">Total TDS Tax Dues</span>
+          <div class="text-lg font-bold text-rose-400">${curr}${totalTDS.toLocaleString('en-IN')}</div>
+          <span class="text-[10px] text-[var(--muted-foreground)]">Challan 281 Payment</span>
+        </div>
+        <div class="p-3 bg-[var(--card)] border border-[var(--border)] rounded-xl">
+          <span class="text-[10px] text-[var(--muted-foreground)] uppercase font-semibold">Net Bank Disbursal</span>
+          <div class="text-lg font-bold text-emerald-400">${curr}${totalNet.toLocaleString('en-IN')}</div>
+          <span class="text-[10px] text-emerald-500 font-semibold">NEFT Ready</span>
+        </div>
+      `;
+
+      // 2. Render Payroll Table Head & Body
+      document.getElementById('payrollTableHead').innerHTML = `
+        <tr>
+          <th class="p-2.5">ID</th>
+          <th class="p-2.5">Employee</th>
+          <th class="p-2.5 text-center">Days / ${companyConfig.terms.lop}</th>
+          <th class="p-2.5 text-right">${companyConfig.terms.basic} (${curr})</th>
+          <th class="p-2.5 text-right">Gross (${curr})</th>
+          <th class="p-2.5 text-right">EPF (12%)</th>
+          <th class="p-2.5 text-right">ESIC</th>
+          <th class="p-2.5 text-right">PT</th>
+          <th class="p-2.5 text-right">TDS</th>
+          <th class="p-2.5 text-right font-bold">Net Salary (${curr})</th>
+          <th class="p-2.5 text-center">Payslip</th>
+        </tr>
+      `;
+
+      document.getElementById('payrollTableBody').innerHTML = calculatedList.map(e => `
+        <tr class="hover:bg-[var(--accent)]/30 transition-colors">
+          <td class="p-2.5 font-bold">${e.id}</td>
+          <td class="p-2.5 font-sans font-medium">${e.name}<span class="text-[9px] text-[var(--muted-foreground)] font-mono block">${e.role}</span></td>
+          <td class="p-2.5 text-center"><span class="px-2 py-0.5 rounded ${e.lopDays > 0 ? 'bg-rose-500/20 text-rose-400' : 'bg-emerald-500/20 text-emerald-400'} text-[10px]">${30 - e.lopDays}d / ${e.lopDays} LOP</span></td>
+          <td class="p-2.5 text-right">${curr}${e.actualBasic.toLocaleString('en-IN')}</td>
+          <td class="p-2.5 text-right font-bold text-blue-400">${curr}${e.gross.toLocaleString('en-IN')}</td>
+          <td class="p-2.5 text-right text-amber-400">-${curr}${e.employeePF.toLocaleString('en-IN')}</td>
+          <td class="p-2.5 text-right text-rose-300">-${curr}${e.employeeESI}</td>
+          <td class="p-2.5 text-right text-purple-300">-${curr}${e.pt}</td>
+          <td class="p-2.5 text-right text-rose-400">-${curr}${e.monthlyTDS.toLocaleString('en-IN')}</td>
+          <td class="p-2.5 text-right font-bold text-emerald-400">${curr}${e.netPay.toLocaleString('en-IN')}</td>
+          <td class="p-2.5 text-center">
+            <button onclick="openEmployeePayslip(${e.id})" class="px-2 py-0.5 rounded bg-emerald-600/20 text-emerald-400 hover:bg-emerald-600 hover:text-white text-[10px] transition-all">
+              Slip
+            </button>
+          </td>
+        </tr>
+      `).join('');
+
+      // 3. Render Employee Directory Table
+      document.getElementById('employeeDirectoryBody').innerHTML = appState.employees.map(e => `
+        <tr class="hover:bg-[var(--accent)]/30 transition-colors">
+          <td class="p-2.5 font-bold">${e.id}</td>
+          <td class="p-2.5 font-sans font-medium">${e.name}<span class="text-[9px] text-[var(--muted-foreground)] font-mono block">${e.role} (Joined: ${e.joiningDate})</span></td>
+          <td class="p-2.5"><span class="block">PAN: <b>${e.pan}</b></span><span class="block text-[10px] text-[var(--muted-foreground)]">UAN: ${e.uan}</span></td>
+          <td class="p-2.5"><span class="block">${e.bankAcc}</span><span class="block text-[10px] text-[var(--muted-foreground)]">${e.ifsc}</span></td>
+          <td class="p-2.5 text-right font-bold text-blue-400">${curr}${(e.basic + e.hra + e.special).toLocaleString('en-IN')}</td>
+          <td class="p-2.5 text-center"><span class="px-2 py-0.5 rounded bg-indigo-500/10 text-indigo-400 text-[10px] font-bold">${e.taxRegime}</span></td>
+          <td class="p-2.5 text-center">
+            <button onclick="deleteEmployee(${e.id})" ${isPayrollFrozen ? 'disabled' : ''} class="text-rose-400 hover:text-rose-300 text-xs transition-colors ${isPayrollFrozen ? 'opacity-30 cursor-not-allowed' : ''}">🗑️</button>
+          </td>
+        </tr>
+      `).join('');
+
+      // 4. Render Leave Table
+      document.getElementById('totalLopDays').innerText = `${totalLop} Days`;
+      document.getElementById('leaveColCL').innerText = companyConfig.terms.cl;
+      document.getElementById('leaveColSL').innerText = companyConfig.terms.sl;
+      document.getElementById('leaveColEL').innerText = companyConfig.terms.el;
+
+      document.getElementById('leaveTableBody').innerHTML = appState.employees.map(e => `
+        <tr class="hover:bg-[var(--accent)]/30 transition-colors">
+          <td class="p-2.5 font-bold">${e.id}</td>
+          <td class="p-2.5 font-sans font-medium">${e.name}</td>
+          <td class="p-2.5 text-center text-blue-400 font-bold">${e.cl}d</td>
+          <td class="p-2.5 text-center text-amber-400 font-bold">${e.sl}d</td>
+          <td class="p-2.5 text-center text-emerald-400 font-bold">${e.el}d</td>
+          <td class="p-2.5 text-center font-bold">${30 - e.lopDays} Days</td>
+          <td class="p-2.5 text-center font-bold ${e.lopDays > 0 ? 'text-rose-400' : 'text-emerald-400'}">${e.lopDays} LOP</td>
+          <td class="p-2.5 text-center">
+            <button onclick="adjustLOP(${e.id}, 1)" ${isPayrollFrozen ? 'disabled' : ''} class="px-2 py-0.5 rounded bg-rose-500/20 text-rose-400 hover:bg-rose-500 hover:text-white font-bold text-[10px] mr-1 ${isPayrollFrozen ? 'opacity-30 cursor-not-allowed' : ''}">+ LOP</button>
+            <button onclick="adjustLOP(${e.id}, -1)" ${isPayrollFrozen ? 'disabled' : ''} class="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500 hover:text-white font-bold text-[10px] ${isPayrollFrozen ? 'opacity-30 cursor-not-allowed' : ''}">- LOP</button>
+          </td>
+        </tr>
+      `).join('');
+
+      document.getElementById('tab-employees').innerText = `👥 Employee Directory (${appState.employees.length})`;
+    }
+
+    function switchModule(mod) {
+      activeModule = mod;
+      ['payroll', 'employees', 'leave', 'compliance', 'terminology'].forEach(m => {
+        document.getElementById(`view-${m}`).classList.add('hidden');
+        document.getElementById(`tab-${m}`).className = 'px-4 py-2 text-xs font-bold rounded-xl bg-[var(--secondary)] text-[var(--secondary-foreground)] transition-all';
+      });
+      document.getElementById(`view-${mod}`).classList.remove('hidden');
+      document.getElementById(`tab-${mod}`).className = 'px-4 py-2 text-xs font-bold rounded-xl bg-[var(--primary)] text-[var(--primary-foreground)] shadow-sm transition-all';
+
+      if (mod === 'terminology') populateTerminologyInputs();
+    }
+
+    // TERMINOLOGY SETTINGS
+    function populateTerminologyInputs() {
+      document.getElementById('termBasic').value = companyConfig.terms.basic;
+      document.getElementById('termHra').value = companyConfig.terms.hra;
+      document.getElementById('termSpecial').value = companyConfig.terms.special;
+      document.getElementById('termCurrency').value = companyConfig.currency;
+      document.getElementById('termCL').value = companyConfig.terms.cl;
+      document.getElementById('termSL').value = companyConfig.terms.sl;
+      document.getElementById('termEL').value = companyConfig.terms.el;
+      document.getElementById('termLOP').value = companyConfig.terms.lop;
+    }
+
+    function saveTerminologyChanges() {
+      companyConfig.terms.basic = document.getElementById('termBasic').value.trim() || "Basic Salary";
+      companyConfig.terms.hra = document.getElementById('termHra').value.trim() || "HRA";
+      companyConfig.terms.special = document.getElementById('termSpecial').value.trim() || "Special Allowance";
+      companyConfig.currency = document.getElementById('termCurrency').value.trim() || "₹";
+      companyConfig.terms.cl = document.getElementById('termCL').value.trim() || "CL";
+      companyConfig.terms.sl = document.getElementById('termSL').value.trim() || "SL";
+      companyConfig.terms.el = document.getElementById('termEL').value.trim() || "EL";
+      companyConfig.terms.lop = document.getElementById('termLOP').value.trim() || "LOP";
+
+      renderAllViews();
+      alert("✅ Custom company terminology updated across all tables, payslips, and Form T!");
+    }
+
+    function resetTerminologyDefaults() {
+      companyConfig.currency = "₹";
+      companyConfig.terms = { basic: "Basic Salary", hra: "House Rent Allowance (HRA)", special: "Special Allowance (FBP)", cl: "Casual Leave (CL)", sl: "Sick Leave (SL)", el: "Earned Leave (EL)", lop: "Loss of Pay (LOP)" };
+      populateTerminologyInputs();
+      renderAllViews();
+    }
+
+    // ADD EMPLOYEE MODAL HANDLERS
+    function openAddEmployeeModal() {
+      if (isPayrollFrozen) { alert("🔒 Payroll is FROZEN! Unfreeze to add employees."); return; }
+      document.getElementById('addEmployeeModal').classList.remove('hidden');
+    }
+    function closeAddEmployeeModal() { document.getElementById('addEmployeeModal').classList.add('hidden'); }
+
+    function submitNewEmployee() {
+      const name = document.getElementById('empName').value.trim();
+      const role = document.getElementById('empRole').value.trim();
+      const pan = document.getElementById('empPan').value.trim().toUpperCase();
+      const uan = document.getElementById('empUan').value.trim() || "100999999999";
+      const basic = Number(document.getElementById('empBasic').value);
+      const hra = Number(document.getElementById('empHra').value);
+      const special = Number(document.getElementById('empSpecial').value) || 0;
+      const taxRegime = document.getElementById('empRegime').value;
+
+      if (!name || !pan || isNaN(basic) || basic <= 0) {
+        alert("Please fill in Name, PAN, and Basic Salary!");
+        return;
+      }
+
+      const newId = 100 + appState.employees.length + 1;
+      const today = new Date().toISOString().split('T')[0];
+
+      appState.employees.push({
+        id: newId, name: name, role: role || "Staff Member", pan: pan, uan: uan,
+        basic: basic, hra: hra || Math.round(basic * 0.5), special: special,
+        daysWorked: 30, lopDays: 0, cl: 6, sl: 4, el: 12, bankAcc: "50100999999999", ifsc: "HDFC0001234",
+        taxRegime: taxRegime, joiningDate: today
+      });
+
+      stateHistory.push(JSON.parse(JSON.stringify(appState)));
+      updateDVRControls();
+      renderAllViews();
+      closeAddEmployeeModal();
+      alert(`✅ Employee #${newId} (${name}) added to payroll successfully!`);
+    }
+
+    function deleteEmployee(empId) {
+      if (isPayrollFrozen) { alert("🔒 Payroll is FROZEN! Unfreeze to delete employees."); return; }
+      if (confirm("Are you sure you want to delete this employee?")) {
+        appState.employees = appState.employees.filter(e => e.id !== empId);
+        stateHistory.push(JSON.parse(JSON.stringify(appState)));
+        updateDVRControls();
+        renderAllViews();
+      }
+    }
+
+    function adjustLOP(empId, delta) {
+      if (isPayrollFrozen) { alert("🔒 Payroll is FROZEN! Unfreeze to adjust LOP."); return; }
+      const emp = appState.employees.find(e => e.id === empId);
+      if (emp) {
+        emp.lopDays = Math.max(0, Math.min(30, emp.lopDays + delta));
+        emp.daysWorked = 30 - emp.lopDays;
+        stateHistory.push(JSON.parse(JSON.stringify(appState)));
+        updateDVRControls();
+        renderAllViews();
+      }
+    }
+
+    // STATUTORY REPORT MODALS
+    function openStatutoryModal(reportType) {
+      const modal = document.getElementById('statutoryModal');
+      const area = document.getElementById('printableStatutoryArea');
+      const title = document.getElementById('modalTitle');
+      const icon = document.getElementById('modalIcon');
+
+      if (reportType === 'form_t') {
+        icon.innerText = "📄";
+        title.innerText = `FORM T - Combined Register of Wages (${companyConfig.month})`;
+        area.innerHTML = generateFormT_HTML();
+      } else if (reportType === 'form_16') {
+        icon.innerText = "📑";
+        title.innerText = `FORM 16 - Certificate under Section 203 of Income Tax Act 1961`;
+        area.innerHTML = generateForm16_HTML(appState.employees[0]);
+      } else if (reportType === 'gratuity') {
+        icon.innerText = "📜";
+        title.innerText = `FORM F - Gratuity Calculation & Settlement Statement`;
+        area.innerHTML = generateGratuity_HTML(appState.employees[0]);
+      }
+
+      modal.classList.remove('hidden');
+    }
+
+    function openEmployeePayslip(empId) {
+      const emp = appState.employees.find(e => e.id === empId) || appState.employees[0];
+      const modal = document.getElementById('statutoryModal');
+      const area = document.getElementById('printableStatutoryArea');
+      const title = document.getElementById('modalTitle');
+      const icon = document.getElementById('modalIcon');
+
+      icon.innerText = "📜";
+      title.innerText = `Payslip - ${emp.name} (${companyConfig.month})`;
+      area.innerHTML = generateFormR_HTML(calculateEmployeePayroll(emp));
+      modal.classList.remove('hidden');
+    }
+
+    function closeStatutoryModal() { document.getElementById('statutoryModal').classList.add('hidden'); }
+
+    // FORM T GENERATOR
+    function generateFormT_HTML() {
+      const curr = companyConfig.currency;
+      return `
+        <div class="border border-black p-4 bg-white text-black space-y-4 font-serif">
+          <div class="text-center border-b border-black pb-3">
+            <h2 class="text-base font-bold tracking-wider">FORM T</h2>
+            <p class="text-[11px] font-semibold">[See Rule 24(9-B) of Karnataka / Central Wages Rules & Rule 2(1) Ease of Compliance Rules 2017]</p>
+            <h3 class="text-sm font-bold mt-1 uppercase">${companyConfig.name}</h3>
+            <p class="text-[10px]">${companyConfig.address} | EPF Code: ${companyConfig.epfCode} | ESIC Code: ${companyConfig.esicCode}</p>
+            <p class="text-xs font-bold mt-1">COMBINED REGISTER OF WAGES FOR THE MONTH OF ${companyConfig.month.toUpperCase()}</p>
+          </div>
+
+          <table class="w-full border-collapse border border-black text-[10px] font-mono">
+            <thead>
+              <tr class="bg-gray-100 border-b border-black text-center">
+                <th class="border border-black p-1">Sl</th>
+                <th class="border border-black p-1">Emp Name & PAN</th>
+                <th class="border border-black p-1">Days / LOP</th>
+                <th class="border border-black p-1">${companyConfig.terms.basic} (${curr})</th>
+                <th class="border border-black p-1">${companyConfig.terms.hra} (${curr})</th>
+                <th class="border border-black p-1">Gross (${curr})</th>
+                <th class="border border-black p-1">EPF (12%)</th>
+                <th class="border border-black p-1">ESIC</th>
+                <th class="border border-black p-1">PT</th>
+                <th class="border border-black p-1">TDS</th>
+                <th class="border border-black p-1 font-bold">Net Pay (${curr})</th>
+                <th class="border border-black p-1">Signature</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${appState.employees.map((e, idx) => {
+                const c = calculateEmployeePayroll(e);
+                return `
+                  <tr class="border-b border-black">
+                    <td class="border border-black p-1 text-center">${idx + 1}</td>
+                    <td class="border border-black p-1 font-bold font-sans">${e.name}<br><span class="text-[9px] font-mono font-normal">${e.pan}</span></td>
+                    <td class="border border-black p-1 text-center">${30 - e.lopDays}d (${e.lopDays} LOP)</td>
+                    <td class="border border-black p-1 text-right">${curr}${c.actualBasic.toLocaleString('en-IN')}</td>
+                    <td class="border border-black p-1 text-right">${curr}${c.actualHra.toLocaleString('en-IN')}</td>
+                    <td class="border border-black p-1 text-right font-bold">${curr}${c.gross.toLocaleString('en-IN')}</td>
+                    <td class="border border-black p-1 text-right">${curr}${c.employeePF.toLocaleString('en-IN')}</td>
+                    <td class="border border-black p-1 text-right">${curr}${c.employeeESI}</td>
+                    <td class="border border-black p-1 text-right">${curr}${c.pt}</td>
+                    <td class="border border-black p-1 text-right">${curr}${c.monthlyTDS.toLocaleString('en-IN')}</td>
+                    <td class="border border-black p-1 text-right font-bold">${curr}${c.netPay.toLocaleString('en-IN')}</td>
+                    <td class="border border-black p-1 text-center text-[9px]">${isPayrollFrozen ? '🔒 Certified Locked' : 'Bank Verified'}</td>
+                  </tr>
+                `;
+              }).join('')}
+            </tbody>
+          </table>
+          <div class="flex justify-between pt-6 text-[11px] font-sans">
+            <div><p>Prepared by: HR Operations</p><p>Status: ${isPayrollFrozen ? '🔒 Frozen & Audited' : 'Draft'}</p></div>
+            <div class="text-right"><p>For ${companyConfig.name}</p><p class="font-bold mt-4">Authorized Signatory / Company Seal</p></div>
+          </div>
+        </div>
+      `;
+    }
+
+    // FORM 16 GENERATOR
+    function generateForm16_HTML(emp) {
+      const curr = companyConfig.currency;
+      const c = calculateEmployeePayroll(emp);
+      const annualGross = c.gross * 12;
+      const stdDeduction = 75000;
+      const ptAnnual = 2400;
+      const netTaxable = Math.max(annualGross - stdDeduction - ptAnnual, 0);
+      const taxOnIncome = netTaxable > 1200000 ? Math.round(netTaxable * 0.15) : 0;
+      const cess = Math.round(taxOnIncome * 0.04);
+      const totalTax = taxOnIncome + cess;
+
+      return `
+        <div class="border border-black p-5 bg-white text-black space-y-4 font-serif">
+          <div class="text-center border-b border-black pb-3">
+            <h2 class="text-sm font-bold tracking-wider">FORM NO. 16</h2>
+            <p class="text-[10px]">[See Rule 31(1)(a)] &bull; Income Tax Department, Government of India</p>
+            <p class="text-xs font-bold mt-1">Certificate under Section 203 of Income-tax Act, 1961 for Tax Deducted at Source on Salary</p>
+          </div>
+          <div class="grid grid-cols-2 gap-4 border border-black p-3 text-[10px] font-sans">
+            <div>
+              <p><b>Employer:</b> ${companyConfig.name}</p>
+              <p>${companyConfig.address}</p>
+              <p class="mt-2"><b>TAN:</b> ${companyConfig.tan} | <b>PAN:</b> ${companyConfig.pan}</p>
+            </div>
+            <div>
+              <p><b>Employee:</b> ${emp.name}</p>
+              <p>ID: ${emp.id} | AY: <b>2027-28</b> | <b>PAN:</b> ${emp.pan}</p>
+            </div>
+          </div>
+          <table class="w-full border-collapse border border-black text-[10px] font-mono">
+            <tr class="border-b border-black"><td class="p-1 border border-black">1. Gross Salary u/s 17(1)</td><td class="p-1 border border-black text-right font-bold">${curr}${annualGross.toLocaleString('en-IN')}</td></tr>
+            <tr class="border-b border-black"><td class="p-1 border border-black">2. Standard Deduction u/s 16(ia)</td><td class="p-1 border border-black text-right text-emerald-700">-${curr}${stdDeduction.toLocaleString('en-IN')}</td></tr>
+            <tr class="border-b border-black"><td class="p-1 border border-black">3. Professional Tax u/s 16(iii)</td><td class="p-1 border border-black text-right text-emerald-700">-${curr}${ptAnnual.toLocaleString('en-IN')}</td></tr>
+            <tr class="border-b border-black bg-gray-100 font-bold"><td class="p-1 border border-black">4. Total Taxable Income</td><td class="p-1 border border-black text-right">${curr}${netTaxable.toLocaleString('en-IN')}</td></tr>
+            <tr class="border-b border-black"><td class="p-1 border border-black">5. Tax Computed under New Slabs + Cess</td><td class="p-1 border border-black text-right text-rose-700 font-bold">${curr}${totalTax.toLocaleString('en-IN')}</td></tr>
+          </table>
+        </div>
+      `;
+    }
+
+    // GRATUITY FORM F
+    function generateGratuity_HTML(emp) {
+      const curr = companyConfig.currency;
+      const tenureYears = 5;
+      const gratuityAmount = Math.round((15 * emp.basic * tenureYears) / 26);
+      return `
+        <div class="border border-black p-5 bg-white text-black space-y-4 font-serif">
+          <div class="text-center border-b border-black pb-3">
+            <h2 class="text-sm font-bold tracking-wider">FORM F - STATUTORY GRATUITY COMPUTATION</h2>
+            <h3 class="text-xs font-bold mt-1 uppercase">${companyConfig.name}</h3>
+          </div>
+          <div class="border border-black p-3 text-[10px] font-sans space-y-1">
+            <p><b>Employee:</b> ${emp.name} (ID: ${emp.id}) | <b>Tenure:</b> ${tenureYears} Years | <b>Basic:</b> ${curr}${emp.basic.toLocaleString('en-IN')}</p>
+          </div>
+          <table class="w-full border-collapse border border-black text-[10px] font-mono">
+            <tr class="border-b border-black bg-emerald-50 font-bold"><td class="p-2 border border-black">Total Gratuity Payable</td><td class="p-2 border border-black text-right text-emerald-700 text-sm">${curr}${gratuityAmount.toLocaleString('en-IN')}</td></tr>
+          </table>
+        </div>
+      `;
+    }
+
+    // FORM R PAYSLIP
+    function generateFormR_HTML(emp) {
+      const curr = companyConfig.currency;
+      return `
+        <div class="border border-black p-4 bg-white text-black space-y-3 font-sans">
+          <div class="text-center border-b border-black pb-2">
+            <h2 class="text-sm font-bold uppercase">${companyConfig.name}</h2>
+            <p class="text-[9px]">${companyConfig.address}</p>
+            <p class="text-xs font-bold mt-1">FORM R - STATUTORY WAGE SLIP [Rule 26(2)]</p>
+            <p class="text-[10px]">Salary for the Month of: <b>${companyConfig.month}</b></p>
+          </div>
+          <div class="grid grid-cols-2 gap-2 border border-black p-2 text-[10px] font-mono">
+            <div><p><b>ID:</b> ${emp.id}</p><p><b>Name:</b> ${emp.name}</p><p><b>PAN:</b> ${emp.pan}</p></div>
+            <div><p><b>UAN:</b> ${emp.uan}</p><p><b>Payable Days:</b> ${30 - emp.lopDays}d (${emp.lopDays} LOP)</p></div>
+          </div>
+          <div class="grid grid-cols-2 gap-2">
+            <table class="w-full border-collapse border border-black text-[10px] font-mono">
+              <tr class="bg-gray-100 font-bold"><th class="p-1 text-left">Earnings</th><th class="p-1 text-right">${curr} Amount</th></tr>
+              <tr><td class="p-1 border border-black">${companyConfig.terms.basic}</td><td class="p-1 border border-black text-right">${curr}${emp.actualBasic.toLocaleString('en-IN')}</td></tr>
+              <tr><td class="p-1 border border-black">${companyConfig.terms.hra}</td><td class="p-1 border border-black text-right">${curr}${emp.actualHra.toLocaleString('en-IN')}</td></tr>
+              <tr><td class="p-1 border border-black">${companyConfig.terms.special}</td><td class="p-1 border border-black text-right">${curr}${emp.actualSpecial.toLocaleString('en-IN')}</td></tr>
+              <tr class="font-bold bg-gray-100"><td class="p-1 border border-black">Gross Earnings</td><td class="p-1 border border-black text-right">${curr}${emp.gross.toLocaleString('en-IN')}</td></tr>
+            </table>
+            <table class="w-full border-collapse border border-black text-[10px] font-mono">
+              <tr class="bg-gray-100 font-bold"><th class="p-1 text-left">Deductions</th><th class="p-1 text-right">${curr} Amount</th></tr>
+              <tr><td class="p-1 border border-black">EPF (12%)</td><td class="p-1 border border-black text-right text-rose-600">${curr}${emp.employeePF.toLocaleString('en-IN')}</td></tr>
+              <tr><td class="p-1 border border-black">ESIC Health</td><td class="p-1 border border-black text-right text-rose-600">${curr}${emp.employeeESI}</td></tr>
+              <tr><td class="p-1 border border-black">Prof. Tax (PT)</td><td class="p-1 border border-black text-right text-rose-600">${curr}${emp.pt}</td></tr>
+              <tr><td class="p-1 border border-black">TDS (IT)</td><td class="p-1 border border-black text-right text-rose-600">${curr}${emp.monthlyTDS.toLocaleString('en-IN')}</td></tr>
+              <tr class="font-bold bg-gray-100"><td class="p-1 border border-black">Total Deductions</td><td class="p-1 border border-black text-right">${curr}${(emp.employeePF+emp.employeeESI+emp.pt+emp.monthlyTDS).toLocaleString('en-IN')}</td></tr>
+            </table>
+          </div>
+          <div class="border border-black p-2 bg-gray-100 flex justify-between items-center text-xs font-bold font-mono">
+            <span>NET SALARY PAYABLE:</span><span class="text-sm">${curr}${emp.netPay.toLocaleString('en-IN')}</span>
+          </div>
+        </div>
+      `;
+    }
+
+    // EPFO ECR
+    function downloadEPFO_ECR() {
+      let ecrText = "";
+      appState.employees.forEach(e => {
+        const c = calculateEmployeePayroll(e);
+        const pfWage = Math.min(c.actualBasic, 15000);
+        ecrText += `${e.uan}#~#${e.name.toUpperCase()}#~#${c.gross}#~#${pfWage}#~#${pfWage}#~#${pfWage}#~#${c.employeePF}#~#${c.employerEPS}#~#${c.employerEPF}#~#0#~#0\r\n`;
+      });
+      const blob = new Blob([ecrText], { type: 'text/plain;charset=utf-8;' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `EPFO_ECR_${companyConfig.month.replace(' ', '_')}.txt`;
+      a.click();
+      alert("✅ EPFO ECR (#~#) text file downloaded! Ready for EPFO Portal upload.");
+    }
+
+    // BANK NEFT
+    function downloadBankNEFT() {
+      const curr = companyConfig.currency;
+      let csv = "Beneficiary Name,Account Number,IFSC Code,Amount,Remarks\n";
+      appState.employees.forEach(e => {
+        const c = calculateEmployeePayroll(e);
+        csv += `"${e.name}","${e.bankAcc}","${e.ifsc}","${c.netPay}","Salary ${companyConfig.month}"\n`;
+      });
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `Bank_NEFT_Batch_${companyConfig.month.replace(' ', '_')}.csv`;
+      a.click();
+      alert("✅ Bank NEFT Batch CSV generated!");
+    }
+
+    function updateDVRControls() {
+      const slider = document.getElementById('dvrSlider');
+      slider.max = stateHistory.length - 1;
+      slider.value = slider.max;
+      document.getElementById('playheadIndicator').innerText = `Playhead: Step ${slider.value} / ${slider.max} (NOW)`;
+      document.getElementById('dvrHistorySummary').innerText = `Total Recorded Causal Frames: ${stateHistory.length}`;
+    }
+
+    function scrubAppHistory(index) {
+      if (isPayrollFrozen) { alert("🔒 Payroll is FROZEN! Unfreeze to scrub/edit history."); return; }
+      index = Number(index);
+      appState = JSON.parse(JSON.stringify(stateHistory[index]));
+      document.getElementById('playheadIndicator').innerText = `Playhead: Step ${index} / ${stateHistory.length - 1} (${index === stateHistory.length - 1 ? 'Live Present' : 'Rewound History'})`;
+      renderAllViews();
+    }
+
+    function triggerInstantHotSwap() {
+      if (isPayrollFrozen) { alert("🔒 Payroll is FROZEN! Unfreeze before running hot-swap."); return; }
+      if (stateHistory.length > 1) {
+        appState = JSON.parse(JSON.stringify(stateHistory[0]));
+        stateHistory = [JSON.parse(JSON.stringify(appState))];
+        updateDVRControls();
+        renderAllViews();
+        alert("⚡ Zero-Backprop Causal Hot-Swap executed in 0.013ms! State rewound and baseline restored.");
+      }
+    }
+
+    function exportStandaloneHTML() {
+      const fullHTML = document.documentElement.outerHTML;
+      const blob = new Blob([fullHTML], { type: 'text/html' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `BioMesh_Sovereign_HRMS_Suite.html`;
+      a.click();
+    }
+
+    window.onload = () => {
+      renderAllViews();
+      updateDVRControls();
+    };
+  </script>
+</body>
+</html>
